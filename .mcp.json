@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=xrlnbwrmascukxmwnqge",
+      "headers": {
+        "Authorization": "Bearer sbp_9d6b0fb974f554480a1159c1ff8b3c665a2169f8"
+      }
+    },
+    "turso": {
+      "command": "node",
+      "args": [
+        "./node_modules/@modelcontextprotocol/server-sqlite/dist/index.js",
+        "./my-10"
+      ]
+    }
+  }
+}
