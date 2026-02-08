@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentUser } from "@/app/lib/auth/session";
 import FavoriteButton from "./FavoriteButton";
+import PriceUpdater from "./PriceUpdater";
 
 async function getItemData(itemId: string) {
   const supabase = await createClient();
@@ -72,7 +73,7 @@ export default async function ItemDetailPage({
     <div className="w-full max-w-md min-h-screen relative flex flex-col bg-bgwarm overflow-hidden shadow-2xl mx-auto">
       <div className="flex-1 overflow-y-auto scrollbar-hide pb-24">
         {/* Hero Image */}
-        <div className="relative w-full aspect-[4/5] bg-gray-200">
+        <div className="relative w-full aspect-[4/5] bg-gradient-to-b from-gray-100 to-gray-200">
           <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 pt-12">
             <Link
               href={`/shops/${shopId}`}
@@ -89,21 +90,24 @@ export default async function ItemDetailPage({
             </button>
           </div>
           {item.image_url ? (
-            <img
-              src={item.image_url}
-              alt={item.name}
-              className="w-full h-full object-cover rounded-bl-[40px]"
-            />
+            <div className="relative w-full h-full p-4 rounded-bl-[40px] overflow-hidden">
+              <img
+                src={item.image_url}
+                alt={item.name}
+                className="w-full h-full object-contain"
+              />
+              {/* フェードアウトエフェクト */}
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-gray-100/30 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-gray-200/30 to-transparent" />
+                <div className="absolute top-0 bottom-0 left-0 w-12 bg-gradient-to-r from-gray-100/20 to-transparent" />
+                <div className="absolute top-0 bottom-0 right-0 w-12 bg-gradient-to-l from-gray-100/20 to-transparent" />
+              </div>
+            </div>
           ) : (
             <div className="w-full h-full bg-gray-300 rounded-bl-[40px]" />
           )}
-          {item.price_range && (
-            <div className="absolute -bottom-6 right-6 bg-bgwarm text-text-main px-6 py-3 rounded-2xl shadow-lg z-20">
-              <p className="text-2xl font-bold font-display tracking-tight text-text-main">
-                {item.price_range}
-              </p>
-            </div>
-          )}
+          <PriceUpdater itemId={itemId} initialPrice={item.price_range} />
         </div>
 
         {/* Item Info */}

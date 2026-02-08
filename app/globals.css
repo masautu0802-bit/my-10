@@ -2,6 +2,7 @@
 
 @theme inline {
   --color-bgwarm: #F8EDE3;
+  --color-bg-card: #FBF5ED;
   --color-sage: #A2B29F;
   --color-sage-light: #BDD2B6;
   --color-dark: #4A4A4A;
@@ -17,6 +18,7 @@
 
   --font-display: "Manrope", "Noto Sans JP", sans-serif;
   --font-sans: "Noto Sans JP", "Manrope", sans-serif;
+  --font-serif: var(--font-playfair), "Noto Serif JP", serif;
 }
 
 body {

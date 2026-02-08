@@ -4,7 +4,7 @@ import BottomNav from "@/app/components/BottomNav";
 import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentUser } from "@/app/lib/auth/session";
 import FollowButton from "./FollowButton";
-import FavoriteButton from "./FavoriteButton";
+import ShopItemsWithPriceUpdate from "./ShopItemsWithPriceUpdate";
 
 async function getShopData(shopId: string) {
   const supabase = await createClient();
@@ -61,19 +61,6 @@ async function getFollowState(shopId: string, userId: string | undefined) {
   };
 }
 
-const aspectClasses = [
-  "aspect-[4/5]",
-  "aspect-[3/4]",
-  "aspect-square",
-  "aspect-[4/5]",
-  "aspect-[4/5]",
-  "aspect-square",
-  "aspect-[3/4]",
-  "aspect-[4/5]",
-  "aspect-square",
-  "aspect-[3/4]",
-];
-
 export default async function ShopDetailPage({
   params,
 }: {
@@ -89,6 +76,7 @@ export default async function ShopDetailPage({
 
   const { shop, ownerName, items, followerCount } = shopData;
   const { isFollowing, favorites } = await getFollowState(shopId, user?.id);
+  const isOwner = user?.id === shop.owner_id;
 
   return (
     <div className="bg-bgwarm min-h-screen flex flex-col antialiased max-w-md mx-auto shadow-2xl">
@@ -102,11 +90,24 @@ export default async function ShopDetailPage({
             arrow_back_ios_new
           </span>
         </Link>
-        <button className="flex items-center justify-center size-10 rounded-full bg-white/80 border border-sage/20 shadow-sm hover:bg-sage-light/20 transition-all text-text-main">
-          <span className="material-symbols-outlined text-[20px]">
-            ios_share
-          </span>
-        </button>
+        <div className="flex items-center gap-2">
+          {isOwner && (
+            <Link
+              href={`/cms/shops/${shopId}`}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-sage/10 border border-sage/20 hover:bg-sage/20 transition-all text-text-main"
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                edit_square
+              </span>
+              <span className="text-xs font-bold">管理</span>
+            </Link>
+          )}
+          <button className="flex items-center justify-center size-10 rounded-full bg-white/80 border border-sage/20 shadow-sm hover:bg-sage-light/20 transition-all text-text-main">
+            <span className="material-symbols-outlined text-[20px]">
+              ios_share
+            </span>
+          </button>
+        </div>
       </div>
 
       <main className="flex-1 pb-32">
@@ -161,15 +162,29 @@ export default async function ShopDetailPage({
 
           <FollowButton shopId={shopId} isFollowing={isFollowing} />
 
+          {/* タグ表示 */}
+          {shop.tags && shop.tags.length > 0 && (
+            <div className="flex gap-2 mt-8 flex-wrap justify-center">
+              {shop.tags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="px-4 py-1.5 rounded-full bg-sage/10 text-text-main border border-sage/30 text-xs font-medium tracking-wide shadow-sm hover:bg-sage/20 transition-colors"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+
           {shop.description && (
-            <div className="relative max-w-md mx-auto px-4 mt-8">
+            <div className="relative max-w-md mx-auto px-4 mt-6">
               <p className="text-text-main text-sm leading-relaxed text-center italic">
                 &quot;{shop.description}&quot;
               </p>
             </div>
           )}
 
-          <div className="flex gap-3 mt-8 flex-wrap justify-center">
+          <div className="flex gap-3 mt-6 flex-wrap justify-center">
             <span className="px-4 py-1.5 rounded-full bg-white/80 text-text-main border border-sage/20 text-xs font-medium tracking-wide shadow-sm">
               {shop.theme}
             </span>
@@ -187,42 +202,7 @@ export default async function ShopDetailPage({
         </div>
 
         {/* Masonry Grid */}
-        <div className="masonry-grid px-4 pt-2 pb-8">
-          {items.map((item, i) => (
-            <div key={item.id} className="masonry-item group relative">
-              <Link
-                href={`/items/${item.id}`}
-                className="block relative overflow-hidden rounded-xl bg-white shadow-sm border border-sage/10 hover:border-sage/30 transition-all duration-300"
-              >
-                <div
-                  className={`${aspectClasses[i % aspectClasses.length]} overflow-hidden bg-gray-100`}
-                >
-                  {item.image_url ? (
-                    <img
-                      src={item.image_url}
-                      alt={item.name}
-                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="h-full w-full bg-gray-200" />
-                  )}
-                </div>
-                <div className="p-4 bg-white">
-                  <h4 className="text-sm font-medium text-text-main leading-tight group-hover:text-sage transition-colors">
-                    {item.name}
-                  </h4>
-                  <p className="text-sm font-bold text-text-main mt-1">
-                    {item.price_range || "価格未設定"}
-                  </p>
-                </div>
-              </Link>
-              <FavoriteButton
-                itemId={item.id}
-                isFavorited={favorites.has(item.id)}
-              />
-            </div>
-          ))}
-        </div>
+        <ShopItemsWithPriceUpdate initialItems={items} favorites={favorites} />
       </main>
 
       <BottomNav />

@@ -13,11 +13,16 @@
       "mcp__supabase__execute_sql",
       "mcp__supabase__get_project_url",
       "mcp__supabase__deploy_edge_function",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npm run dev:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "supabase"
+    "shadcn",
+    "supabase",
+    "turso"
   ]
 }

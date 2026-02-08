@@ -79,3 +79,39 @@ export async function updateProfile(formData: {
   revalidatePath('/my/profile')
   return {}
 }
+
+export async function createShop(formData: {
+  name: string
+  theme: string
+  description?: string
+  tags?: string[]
+}) {
+  const user = await requireAuth()
+  const supabase = await createClient()
+
+  // Validate tags (max 3)
+  if (formData.tags && formData.tags.length > 3) {
+    return { error: 'タグは最大3つまでです' }
+  }
+
+  const { data: shop, error } = await supabase
+    .from('shops')
+    .insert({
+      name: formData.name,
+      theme: formData.theme,
+      description: formData.description,
+      tags: formData.tags,
+      owner_id: user.id,
+    })
+    .select('id')
+    .single()
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/shop')
+  revalidatePath('/my')
+  revalidatePath('/')
+  return { shopId: shop.id }
+}
