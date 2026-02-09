@@ -14,16 +14,31 @@ async function getMyPageData(userId: string) {
     .select(`
       shops (
         id,
-        name,
-        theme
+        name
       )
     `)
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  const followedShops = (follows || [])
-    .map((f) => f.shops as unknown as { id: string; name: string; theme: string })
-    .filter(Boolean);
+  const followedShops = await Promise.all(
+    (follows || [])
+      .map((f) => f.shops as unknown as { id: string; name: string })
+      .filter(Boolean)
+      .map(async (shop) => {
+        // Get first item image for each shop
+        const { data: items } = await supabase
+          .from("items")
+          .select("image_url")
+          .eq("shop_id", shop.id)
+          .order("order_index", { ascending: true })
+          .limit(1);
+
+        return {
+          ...shop,
+          first_item_image: items?.[0]?.image_url || null,
+        };
+      })
+  );
 
   // Get saved items
   const { data: favs } = await supabase

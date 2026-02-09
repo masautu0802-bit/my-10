@@ -6,7 +6,7 @@ import Link from "next/link";
 type FollowedShop = {
   id: string;
   name: string;
-  theme: string;
+  first_item_image: string | null;
 };
 
 type SavedItem = {
@@ -80,12 +80,25 @@ export default function MyPageTabs({
                 className="block bg-white rounded-xl p-3 shadow-soft hover:shadow-soft-hover transition-shadow border border-text-main/5"
               >
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-gray-200 overflow-hidden shrink-0" />
+                  <div className="h-10 w-10 rounded-full bg-gray-200 overflow-hidden shrink-0">
+                    {shop.first_item_image ? (
+                      <img
+                        src={shop.first_item_image}
+                        alt={shop.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-gray-400 text-[20px]">
+                          storefront
+                        </span>
+                      </div>
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-sm leading-tight text-text-main truncate">
                       {shop.name}
                     </h3>
-                    <p className="text-[10px] text-gray-400">{shop.theme}</p>
                   </div>
                   <span className="material-symbols-outlined text-gray-300 text-[18px]">
                     chevron_right

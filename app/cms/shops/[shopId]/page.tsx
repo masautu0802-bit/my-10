@@ -72,15 +72,25 @@ export default async function ShopCMSPage({
             クリエイタースタジオ
           </span>
         </div>
-        <Link
-          href={`/shops/${shopId}`}
-          className="flex items-center gap-1.5 text-text-main font-semibold text-sm tracking-wide h-10 px-3 rounded-full bg-sage/10 hover:bg-sage/20 active:bg-sage/30 transition-colors"
-        >
-          <span className="material-symbols-outlined text-[18px]">
-            visibility
-          </span>
-          <span>プレビュー</span>
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href={`/cms/shops/${shopId}/settings`}
+            className="flex items-center gap-1.5 text-text-main font-semibold text-sm tracking-wide h-10 px-3 rounded-full bg-surface border border-border-light hover:bg-white active:scale-95 transition-all"
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              settings
+            </span>
+          </Link>
+          <Link
+            href={`/shops/${shopId}`}
+            className="flex items-center gap-1.5 text-text-main font-semibold text-sm tracking-wide h-10 px-3 rounded-full bg-sage/10 hover:bg-sage/20 active:bg-sage/30 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              visibility
+            </span>
+            <span>プレビュー</span>
+          </Link>
+        </div>
       </header>
 
       <main className="flex-1 flex flex-col pb-24 px-4">

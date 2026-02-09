@@ -61,31 +61,22 @@ export default function ShopItemsWithPriceUpdate({
             className="block relative overflow-hidden rounded-xl bg-white shadow-sm border border-sage/10 hover:border-sage/30 transition-all duration-300"
           >
             <div
-              className={`${aspectClasses[i % aspectClasses.length]} overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 relative`}
+              className={`${aspectClasses[i % aspectClasses.length]} overflow-hidden relative bg-gradient-to-br from-sage/5 to-sage/15`}
             >
               {item.image_url ? (
-                <>
-                  <div className="absolute inset-0 p-3">
-                    <img
-                      src={item.image_url}
-                      alt={item.name}
-                      className="h-full w-full object-contain transition-transform duration-700 group-hover:scale-105"
-                    />
-                  </div>
-                  {/* フェードアウトエフェクト */}
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-gray-50/40 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-100/40 to-transparent" />
-                    <div className="absolute top-0 bottom-0 left-0 w-8 bg-gradient-to-r from-gray-50/30 to-transparent" />
-                    <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-gray-50/30 to-transparent" />
-                  </div>
-                </>
+                <div className="absolute inset-0 p-3">
+                  <img
+                    src={item.image_url}
+                    alt={item.name}
+                    className="h-full w-full object-contain transition-transform duration-700 group-hover:scale-105"
+                  />
+                </div>
               ) : (
                 <div className="h-full w-full bg-gray-200" />
               )}
             </div>
             <div className="p-4 bg-white">
-              <h4 className="text-sm font-medium text-text-main leading-tight group-hover:text-sage transition-colors">
+              <h4 className="text-sm font-medium text-text-main leading-tight group-hover:text-sage transition-colors line-clamp-2">
                 {item.name}
               </h4>
               <p className="text-sm font-bold text-text-main mt-1">

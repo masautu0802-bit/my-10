@@ -59,17 +59,55 @@ export async function toggleItemFavorite(itemId: string) {
   revalidatePath('/my')
 }
 
+export async function uploadAvatar(file: File) {
+  const user = await requireAuth()
+  const supabase = await createClient()
+
+  // Generate unique filename
+  const fileExt = file.name.split('.').pop()
+  const fileName = `${user.id}-${Date.now()}.${fileExt}`
+  const filePath = `${fileName}`
+
+  // Upload to Supabase Storage
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: true,
+    })
+
+  if (uploadError) {
+    return { error: uploadError.message }
+  }
+
+  // Get public URL
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from('avatars').getPublicUrl(filePath)
+
+  return { url: publicUrl }
+}
+
 export async function updateProfile(formData: {
   name: string
   bio?: string
+  avatar_url?: string | null
 }) {
   const user = await requireAuth()
   const supabase = await createClient()
 
-  const { error } = await supabase
-    .from('users')
-    .update({ name: formData.name })
-    .eq('id', user.id)
+  const updateData: {
+    name: string
+    avatar_url?: string | null
+  } = {
+    name: formData.name,
+  }
+
+  if (formData.avatar_url !== undefined) {
+    updateData.avatar_url = formData.avatar_url
+  }
+
+  const { error } = await supabase.from('users').update(updateData).eq('id', user.id)
 
   if (error) {
     return { error: error.message }
@@ -85,6 +123,14 @@ export async function createShop(formData: {
   theme: string
   description?: string
   tags?: string[]
+  font_family?: string
+  color_theme?: {
+    primary: string
+    secondary: string
+    tertiary: string
+    quaternary: string
+    isDark?: boolean
+  }
 }) {
   const user = await requireAuth()
   const supabase = await createClient()
@@ -102,6 +148,8 @@ export async function createShop(formData: {
       description: formData.description,
       tags: formData.tags,
       owner_id: user.id,
+      font_family: formData.font_family,
+      color_theme: formData.color_theme,
     })
     .select('id')
     .single()

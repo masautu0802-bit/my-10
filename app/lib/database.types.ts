@@ -7,13 +7,50 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
+      color_themes: {
+        Row: {
+          created_at: string | null
+          display_order: number
+          id: string
+          is_dark: boolean | null
+          label: string
+          name: string
+          primary_color: string
+          quaternary_color: string
+          secondary_color: string
+          tertiary_color: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number
+          id?: string
+          is_dark?: boolean | null
+          label: string
+          name: string
+          primary_color: string
+          quaternary_color: string
+          secondary_color: string
+          tertiary_color: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number
+          id?: string
+          is_dark?: boolean | null
+          label?: string
+          name?: string
+          primary_color?: string
+          quaternary_color?: string
+          secondary_color?: string
+          tertiary_color?: string
+        }
+        Relationships: []
+      }
       item_favorites: {
         Row: {
           created_at: string
@@ -158,8 +195,10 @@ export type Database = {
       }
       shops: {
         Row: {
+          color_theme: Json | null
           created_at: string
           description: string | null
+          font_family: string | null
           id: string
           name: string
           owner_id: string
@@ -168,8 +207,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          color_theme?: Json | null
           created_at?: string
           description?: string | null
+          font_family?: string | null
           id?: string
           name: string
           owner_id: string
@@ -178,8 +219,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          color_theme?: Json | null
           created_at?: string
           description?: string | null
+          font_family?: string | null
           id?: string
           name?: string
           owner_id?: string

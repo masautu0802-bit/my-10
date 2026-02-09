@@ -32,17 +32,11 @@ export default async function ProfileEditPage() {
         </Link>
       </header>
 
-      <main className="flex-1 flex flex-col gap-8 px-6 pb-32 overflow-y-auto">
-        {/* Avatar */}
-        <div className="flex flex-col items-center gap-4 pt-2">
-          <div className="relative group cursor-pointer hover:scale-[1.02] transition-transform duration-300">
-            <div className="p-1 rounded-full border-2 border-dashed border-sage">
-              <div className="size-32 rounded-full bg-gray-200 border-4 border-bgwarm shadow-soft" />
-            </div>
-          </div>
-        </div>
-
-        <ProfileForm initialName={profile?.name || ""} />
+      <main className="flex-1 flex flex-col gap-8 px-6 pb-32 overflow-y-auto pt-6">
+        <ProfileForm
+          initialName={profile?.name || ""}
+          initialAvatarUrl={profile?.avatar_url}
+        />
       </main>
 
       <BottomNav />
