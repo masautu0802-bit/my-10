@@ -26,7 +26,8 @@
       "Bash(find:*)",
       "mcp__supabase__list_extensions",
       "WebSearch",
-      "Bash(npx supabase:*)"
+      "Bash(npx supabase:*)",
+      "Bash(npm run build:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
