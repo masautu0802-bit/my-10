@@ -262,13 +262,18 @@ export function parseColorTheme(
     typeof data.tertiary === "string" &&
     typeof data.quaternary === "string"
   ) {
+    const primary = data.primary as string;
+    const secondary = data.secondary as string;
+    const tertiary = data.tertiary as string;
+    const quaternary = data.quaternary as string;
+
     // 既存のテーマから一致するものを探す
     const matchingTheme = COLOR_THEMES.find(
       (theme) =>
-        theme.primary.toLowerCase() === data.primary.toLowerCase() &&
-        theme.secondary.toLowerCase() === data.secondary.toLowerCase() &&
-        theme.tertiary.toLowerCase() === data.tertiary.toLowerCase() &&
-        theme.quaternary.toLowerCase() === data.quaternary.toLowerCase()
+        theme.primary.toLowerCase() === primary.toLowerCase() &&
+        theme.secondary.toLowerCase() === secondary.toLowerCase() &&
+        theme.tertiary.toLowerCase() === tertiary.toLowerCase() &&
+        theme.quaternary.toLowerCase() === quaternary.toLowerCase()
     );
 
     if (matchingTheme) {
@@ -278,10 +283,10 @@ export function parseColorTheme(
     return {
       name: "custom",
       label: "カスタム",
-      primary: data.primary,
-      secondary: data.secondary,
-      tertiary: data.tertiary,
-      quaternary: data.quaternary,
+      primary,
+      secondary,
+      tertiary,
+      quaternary,
       isDark: typeof data.isDark === "boolean" ? data.isDark : false,
     };
   }
