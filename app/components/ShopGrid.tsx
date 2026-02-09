@@ -245,7 +245,7 @@ export default function ShopGrid({
             </span>
           </div>
           <h3 className="text-xl font-bold tracking-tight text-dark">
-            {selectedTag ? `#${selectedTag}` : "厳選ショップ"}
+            {selectedTag ? `#${selectedTag}` : "Shops"}
           </h3>
           {selectedTag && (
             <span className="text-xs text-text-main/60">
