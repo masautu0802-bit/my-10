@@ -1,23 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useTransition, useEffect } from "react";
 import { signIn, signInWithGoogle } from "@/app/actions/auth";
 
-function LoginForm() {
+export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const searchParams = useSearchParams();
 
   // Check for error in URL params (from OAuth callback)
   useEffect(() => {
-    const errorParam = searchParams.get('error');
-    if (errorParam) {
-      setError(decodeURIComponent(errorParam));
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const errorParam = urlParams.get('error');
+      if (errorParam) {
+        setError(decodeURIComponent(errorParam));
+      }
     }
-  }, [searchParams]);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -220,17 +221,5 @@ function LoginForm() {
         </div>
       </div>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-bgwarm">
-        <div className="text-sage">読み込み中...</div>
-      </div>
-    }>
-      <LoginForm />
-    </Suspense>
   );
 }
