@@ -169,8 +169,12 @@ export async function updateItemPrice(itemId: string) {
   // Amazon URLから価格を取得
   const amazonData = await fetchImageUtil(item.ec_url)
 
-  if ('error' in amazonData || !amazonData.price) {
-    return { error: '価格の取得に失敗しました' }
+  if ('error' in amazonData) {
+    return { error: `価格取得失敗: ${amazonData.error}` }
+  }
+
+  if (!amazonData.price) {
+    return { error: '価格情報が見つかりませんでした（在庫切れまたは価格非表示の可能性があります）' }
   }
 
   // 価格を更新
@@ -180,7 +184,7 @@ export async function updateItemPrice(itemId: string) {
     .eq('id', itemId)
 
   if (error) {
-    return { error: '価格の更新に失敗しました' }
+    return { error: `DB更新エラー: ${error.message}` }
   }
 
   revalidatePath(`/items/${itemId}`)

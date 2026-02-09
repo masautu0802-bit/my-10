@@ -35,21 +35,39 @@ export default function ShopItemsWithPriceUpdate({
   const [items, setItems] = useState(initialItems);
 
   useEffect(() => {
-    // 価格が未設定の商品の価格を更新（最初の3つまで）
+    // 価格が未設定の商品の価格を更新（最初の3つまで、順番に実行）
     const itemsToUpdate = items
       .filter((item) => !item.price_range)
       .slice(0, 3);
 
-    itemsToUpdate.forEach(async (item) => {
-      const result = await updateItemPrice(item.id);
-      if (result.price) {
-        setItems((prev) =>
-          prev.map((i) =>
-            i.id === item.id ? { ...i, price_range: result.price! } : i
-          )
-        );
+    async function updatePrices() {
+      for (const item of itemsToUpdate) {
+        try {
+          const result = await updateItemPrice(item.id);
+          if (result.price) {
+            setItems((prev) =>
+              prev.map((i) =>
+                i.id === item.id ? { ...i, price_range: result.price! } : i
+              )
+            );
+          } else if (result.error) {
+            setItems((prev) =>
+              prev.map((i) =>
+                i.id === item.id ? { ...i, price_range: "価格取得失敗" } : i
+              )
+            );
+          }
+        } catch {
+          setItems((prev) =>
+            prev.map((i) =>
+              i.id === item.id ? { ...i, price_range: "価格取得失敗" } : i
+            )
+          );
+        }
       }
-    });
+    }
+
+    updatePrices();
   }, []);
 
   return (
