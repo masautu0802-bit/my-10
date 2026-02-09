@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { signUp } from "@/app/actions/auth";
+import { signUp, signInWithGoogle } from "@/app/actions/auth";
 
 export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -38,6 +38,17 @@ export default function SignUpPage() {
       const result = await signUp({ email, password, name });
       if (result?.error) {
         setError(result.error);
+      }
+    });
+  };
+
+  const handleGoogleSignIn = () => {
+    startTransition(async () => {
+      const result = await signInWithGoogle();
+      if (result.error) {
+        setError(result.error);
+      } else if (result.url) {
+        window.location.href = result.url;
       }
     });
   };
@@ -222,7 +233,12 @@ export default function SignUpPage() {
         </div>
 
         <div className="flex gap-4 justify-center">
-          <button className="w-14 h-14 rounded-2xl bg-white shadow-soft flex items-center justify-center hover:-translate-y-1 transition-transform duration-300 border border-transparent hover:border-sage/20">
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={isPending}
+            className="w-14 h-14 rounded-2xl bg-white shadow-soft flex items-center justify-center hover:-translate-y-1 transition-transform duration-300 border border-transparent hover:border-sage/20 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
             <svg
               className="w-6 h-6 opacity-80"
               viewBox="0 0 24 24"
