@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentUser } from "@/app/lib/auth/session";
 import FavoriteButton from "./FavoriteButton";
+import BackButton from "@/app/components/BackButton";
 
 async function getItemData(itemId: string) {
   const supabase = await createClient();
@@ -58,15 +59,16 @@ export default async function ItemDetailPage({
   params: Promise<{ itemId: string }>;
 }) {
   const { itemId } = await params;
+  const userPromise = getCurrentUser();
   const [itemData, user] = await Promise.all([
     getItemData(itemId),
-    getCurrentUser(),
+    userPromise,
   ]);
 
   if (!itemData) notFound();
 
   const { item, shopName, shopId, ownerName } = itemData;
-  const isFavorited = await getIsFavorited(itemId, user?.id);
+  const isFavorited = user ? await getIsFavorited(itemId, user.id) : false;
 
   return (
     <div className="w-full max-w-md min-h-screen relative flex flex-col bg-bgwarm overflow-hidden shadow-2xl mx-auto">
@@ -74,14 +76,11 @@ export default async function ItemDetailPage({
         {/* Hero Image */}
         <div className="relative w-full aspect-[4/5] bg-gradient-to-b from-gray-100 to-gray-200">
           <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 pt-12">
-            <Link
-              href={`/shops/${shopId}`}
+            <BackButton
               className="flex items-center justify-center w-11 h-11 rounded-full bg-white/80 backdrop-blur-sm text-text-main hover:bg-white transition-transform active:scale-95 shadow-sm"
-            >
-              <span className="material-symbols-outlined font-bold">
-                arrow_back
-              </span>
-            </Link>
+              icon="arrow_back"
+              iconSize={24}
+            />
             <button className="flex items-center justify-center w-11 h-11 rounded-full bg-white/80 backdrop-blur-sm text-text-main hover:bg-white transition-transform active:scale-95 shadow-sm">
               <span className="material-symbols-outlined font-bold">
                 share

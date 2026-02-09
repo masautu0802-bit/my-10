@@ -5,6 +5,7 @@ import { getCurrentUser, checkShopOwnership } from "@/app/lib/auth/session";
 import BottomNav from "@/app/components/BottomNav";
 import ItemList from "./ItemList";
 import DeleteShopButton from "./DeleteShopButton";
+import BackButton from "@/app/components/BackButton";
 
 async function getShopCMSData(shopId: string) {
   const supabase = await createClient();
@@ -57,14 +58,11 @@ export default async function ShopCMSPage({
     <div className="bg-bgwarm min-h-screen flex flex-col overflow-x-hidden antialiased max-w-md mx-auto shadow-2xl">
       {/* Header */}
       <header className="sticky top-0 z-20 flex items-center bg-bgwarm/95 backdrop-blur-md p-4 pb-2 justify-between border-b border-border-light">
-        <Link
-          href="/shop"
+        <BackButton
           className="text-text-main flex size-10 shrink-0 items-center justify-center rounded-full bg-surface shadow-sm hover:bg-white active:scale-95 transition-all"
-        >
-          <span className="material-symbols-outlined text-2xl">
-            arrow_back
-          </span>
-        </Link>
+          icon="arrow_back"
+          iconSize={24}
+        />
         <div className="flex flex-col items-center flex-1">
           <h2 className="text-text-main text-lg font-bold leading-tight tracking-tight">
             {shop.name}

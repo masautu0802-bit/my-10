@@ -21,25 +21,32 @@ async function getMyPageData(userId: string) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  const followedShops = await Promise.all(
-    (follows || [])
-      .map((f) => f.shops as unknown as { id: string; name: string })
-      .filter(Boolean)
-      .map(async (shop) => {
-        // Get first item image for each shop
-        const { data: items } = await supabase
-          .from("items")
-          .select("image_url")
-          .eq("shop_id", shop.id)
-          .order("order_index", { ascending: true })
-          .limit(1);
+  const shopList = (follows || [])
+    .map((f) => f.shops as unknown as { id: string; name: string })
+    .filter(Boolean);
 
-        return {
-          ...shop,
-          first_item_image: items?.[0]?.image_url || null,
-        };
-      })
-  );
+  const shopIds = shopList.map((s) => s.id);
+
+  // Batch: get first item images for all followed shops in one query
+  const { data: allItems } = shopIds.length > 0
+    ? await supabase
+        .from("items")
+        .select("shop_id, image_url, order_index")
+        .in("shop_id", shopIds)
+        .order("order_index", { ascending: true })
+    : { data: [] };
+
+  const firstItemImageMap: Record<string, string | null> = {};
+  allItems?.forEach((item) => {
+    if (!(item.shop_id in firstItemImageMap)) {
+      firstItemImageMap[item.shop_id] = item.image_url;
+    }
+  });
+
+  const followedShops = shopList.map((shop) => ({
+    ...shop,
+    first_item_image: firstItemImageMap[shop.id] || null,
+  }));
 
   // Get saved items
   const { data: favs } = await supabase

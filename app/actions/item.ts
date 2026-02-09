@@ -167,13 +167,15 @@ export async function reorderItems(shopId: string, itemIds: string[]) {
     order_index: index,
   }))
 
-  for (const update of updates) {
-    await supabase
-      .from('items')
-      .update({ order_index: update.order_index })
-      .eq('id', update.id)
-      .eq('shop_id', shopId)
-  }
+  await Promise.all(
+    updates.map((update) =>
+      supabase
+        .from('items')
+        .update({ order_index: update.order_index })
+        .eq('id', update.id)
+        .eq('shop_id', shopId)
+    )
+  )
 
   revalidatePath(`/cms/shops/${shopId}`)
   revalidatePath(`/shops/${shopId}`)

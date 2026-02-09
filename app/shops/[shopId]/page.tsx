@@ -11,6 +11,7 @@ import {
   getContrastTextColor,
 } from "@/app/lib/shop-customization";
 import { getFontUrl } from "@/app/lib/fonts";
+import BackButton from "@/app/components/BackButton";
 
 async function getShopData(shopId: string) {
   const supabase = await createClient();
@@ -26,16 +27,17 @@ async function getShopData(shopId: string) {
 
   if (!shop) return null;
 
-  const { data: items } = await supabase
-    .from("items")
-    .select("*")
-    .eq("shop_id", shopId)
-    .order("order_index", { ascending: true });
-
-  const { count: followerCount } = await supabase
-    .from("shop_follows")
-    .select("*", { count: "exact", head: true })
-    .eq("shop_id", shopId);
+  const [{ data: items }, { count: followerCount }] = await Promise.all([
+    supabase
+      .from("items")
+      .select("*")
+      .eq("shop_id", shopId)
+      .order("order_index", { ascending: true }),
+    supabase
+      .from("shop_follows")
+      .select("*", { count: "exact", head: true })
+      .eq("shop_id", shopId),
+  ]);
 
   const owner = shop.users as unknown as { name: string; avatar_url?: string | null };
 
@@ -52,17 +54,18 @@ async function getFollowState(shopId: string, userId: string | undefined) {
   if (!userId) return { isFollowing: false, favorites: new Set<string>() };
   const supabase = await createClient();
 
-  const { data: follow } = await supabase
-    .from("shop_follows")
-    .select("user_id")
-    .eq("user_id", userId)
-    .eq("shop_id", shopId)
-    .single();
-
-  const { data: favs } = await supabase
-    .from("item_favorites")
-    .select("item_id")
-    .eq("user_id", userId);
+  const [{ data: follow }, { data: favs }] = await Promise.all([
+    supabase
+      .from("shop_follows")
+      .select("user_id")
+      .eq("user_id", userId)
+      .eq("shop_id", shopId)
+      .single(),
+    supabase
+      .from("item_favorites")
+      .select("item_id")
+      .eq("user_id", userId),
+  ]);
 
   return {
     isFollowing: !!follow,
@@ -123,22 +126,15 @@ export default async function ShopDetailPage({
             borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)"}`,
           }}
         >
-          <Link
-            href="/"
+          <BackButton
             className="flex items-center justify-center size-10 rounded-full shadow-sm hover:opacity-80 transition-all"
             style={{
               backgroundColor: `${bgQuaternary}CC`,
               color: textOnQuaternary,
               border: `1px solid ${isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.1)"}`,
             }}
-          >
-            <span
-              className="material-symbols-outlined text-[20px]"
-              style={{ color: textOnQuaternary }}
-            >
-              arrow_back_ios_new
-            </span>
-          </Link>
+            iconStyle={{ color: textOnQuaternary }}
+          />
           <div className="flex items-center gap-2">
             {isOwner && (
               <Link

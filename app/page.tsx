@@ -26,19 +26,22 @@ const gradients = [
 async function getTopTags(): Promise<TagCategory[]> {
   const supabase = await createClient();
 
-  // Get all tags from shops
+  // Get all shops with tags
   const { data: shops } = await supabase
     .from("shops")
     .select("id, tags")
     .not("tags", "is", null);
 
-  if (!shops) return [];
+  if (!shops || shops.length === 0) return [];
 
-  // Count tag occurrences
+  // Count tag occurrences and build tag->shopIds mapping
   const tagCounts: Record<string, number> = {};
+  const tagShopIds: Record<string, string[]> = {};
   shops.forEach((shop) => {
     shop.tags?.forEach((tag: string) => {
       tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+      if (!tagShopIds[tag]) tagShopIds[tag] = [];
+      tagShopIds[tag].push(shop.id);
     });
   });
 
@@ -48,60 +51,54 @@ async function getTopTags(): Promise<TagCategory[]> {
     .slice(0, 8)
     .map(([tag]) => tag);
 
-  // For each tag, get the shop with most followers and its first item
-  const tagCategories: TagCategory[] = await Promise.all(
-    topTags.map(async (tag, index) => {
-      // Get shops with this tag
-      const { data: taggedShops } = await supabase
-        .from("shops")
-        .select("id")
-        .contains("tags", [tag]);
+  if (topTags.length === 0) return [];
 
-      if (!taggedShops || taggedShops.length === 0) {
-        return {
-          name: tag,
-          gradient: gradients[index % gradients.length],
-          badge: index === 0 ? "Hot" : undefined,
-        };
-      }
+  // Collect all relevant shop IDs
+  const allShopIds = [...new Set(topTags.flatMap((tag) => tagShopIds[tag] || []))];
 
-      const shopIds = taggedShops.map((s) => s.id);
+  // Batch: get all follows and items in 2 queries
+  const [{ data: allFollows }, { data: allItems }] = await Promise.all([
+    supabase.from("shop_follows").select("shop_id").in("shop_id", allShopIds),
+    supabase.from("items").select("shop_id, image_url, order_index").in("shop_id", allShopIds).order("order_index", { ascending: true }),
+  ]);
 
-      // Get follower counts for these shops
-      const { data: followCounts } = await supabase
-        .from("shop_follows")
-        .select("shop_id")
-        .in("shop_id", shopIds);
+  // Build follower count map
+  const followerCountMap: Record<string, number> = {};
+  allFollows?.forEach((f) => {
+    followerCountMap[f.shop_id] = (followerCountMap[f.shop_id] || 0) + 1;
+  });
 
-      const countMap: Record<string, number> = {};
-      followCounts?.forEach((f) => {
-        countMap[f.shop_id] = (countMap[f.shop_id] || 0) + 1;
-      });
+  // Build first item image map (first item per shop by order_index)
+  const firstItemImageMap: Record<string, string | null> = {};
+  allItems?.forEach((item) => {
+    if (!(item.shop_id in firstItemImageMap)) {
+      firstItemImageMap[item.shop_id] = item.image_url;
+    }
+  });
 
-      // Find shop with most followers
-      const topShopId =
-        shopIds.length === 1
-          ? shopIds[0]
-          : shopIds.reduce((a, b) => ((countMap[a] || 0) > (countMap[b] || 0) ? a : b));
-
-      // Get first item (order_index = 0 or minimum) from that shop
-      const { data: items } = await supabase
-        .from("items")
-        .select("image_url")
-        .eq("shop_id", topShopId)
-        .order("order_index", { ascending: true })
-        .limit(1);
-
+  // Compute tag categories in JS
+  return topTags.map((tag, index) => {
+    const shopIds = tagShopIds[tag] || [];
+    if (shopIds.length === 0) {
       return {
         name: tag,
         gradient: gradients[index % gradients.length],
         badge: index === 0 ? "Hot" : undefined,
-        imageUrl: items?.[0]?.image_url || undefined,
       };
-    })
-  );
+    }
 
-  return tagCategories;
+    // Find shop with most followers
+    const topShopId = shopIds.reduce((a, b) =>
+      (followerCountMap[a] || 0) >= (followerCountMap[b] || 0) ? a : b
+    );
+
+    return {
+      name: tag,
+      gradient: gradients[index % gradients.length],
+      badge: index === 0 ? "Hot" : undefined,
+      imageUrl: firstItemImageMap[topShopId] || undefined,
+    };
+  });
 }
 
 async function getShops() {

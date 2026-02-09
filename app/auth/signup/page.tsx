@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { signUp, signInWithGoogle } from "@/app/actions/auth";
+import BackButton from "@/app/components/BackButton";
 
 export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -57,14 +58,11 @@ export default function SignUpPage() {
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-bgwarm shadow-2xl p-6">
       <header className="pt-8 pb-8 flex items-center justify-between">
-        <Link
-          href="/auth/login"
+        <BackButton
           className="w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-sage transition-colors"
-        >
-          <span className="material-symbols-outlined text-[24px]">
-            arrow_back
-          </span>
-        </Link>
+          icon="arrow_back"
+          iconSize={24}
+        />
         <div className="flex items-center gap-1">
           <span className="text-2xl font-extrabold tracking-tight text-sage font-display">
             My10

@@ -4,6 +4,7 @@ import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { searchShops, getPopularTags, type SearchResult } from "@/app/actions/search";
+import BackButton from "@/app/components/BackButton";
 
 const gradients = [
   "from-coral to-sage",
@@ -88,14 +89,10 @@ export default function SearchClient() {
       {/* Header with Search Bar */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-lg px-6 py-5 border-b border-sage/10">
         <div className="flex items-center gap-3">
-          <Link
-            href="/"
+          <BackButton
             className="flex items-center justify-center size-10 rounded-full bg-gray-50 text-text-main hover:bg-gray-100 transition-colors shrink-0"
-          >
-            <span className="material-symbols-outlined text-[20px]">
-              arrow_back
-            </span>
-          </Link>
+            icon="arrow_back"
+          />
           <div className="flex-1 relative">
             <input
               type="text"

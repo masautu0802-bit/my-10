@@ -2,6 +2,16 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+
+  // Only run auth check for protected routes (/my, /cms) and auth routes (/auth)
+  const isProtectedRoute = pathname.startsWith('/my') || pathname.startsWith('/cms')
+  const isAuthRoute = pathname.startsWith('/auth')
+
+  if (!isProtectedRoute && !isAuthRoute) {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -15,7 +25,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
           supabaseResponse = NextResponse.next({
@@ -34,22 +44,16 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Protected routes
-  const protectedRoutes = ['/my', '/cms']
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route)
-  )
-
   // Redirect to login if accessing protected route without authentication
   if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
-    url.searchParams.set('redirect', request.nextUrl.pathname)
+    url.searchParams.set('redirect', pathname)
     return NextResponse.redirect(url)
   }
 
   // Redirect to home if accessing auth pages while authenticated
-  if (request.nextUrl.pathname.startsWith('/auth') && user) {
+  if (isAuthRoute && user) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)

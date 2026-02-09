@@ -4,6 +4,7 @@ import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createItem, uploadItemImage } from "@/app/actions/item";
+import BackButton from "@/app/components/BackButton";
 
 export default function NewItemPage({
   params,
@@ -106,23 +107,16 @@ export default function NewItemPage({
   return (
     <div className="bg-bgwarm min-h-screen flex flex-col antialiased max-w-md mx-auto shadow-2xl">
       <header className="flex items-center justify-between px-6 py-5 bg-bgwarm sticky top-0 z-20">
-        <Link
-          href={`/cms/shops/${shopId}`}
-          className="flex size-10 items-center justify-center rounded-full bg-white shadow-sm hover:scale-105 transition-transform text-text-main border border-sage/50"
-        >
-          <span className="material-symbols-outlined text-[20px]">
-            arrow_back_ios_new
-          </span>
-        </Link>
+        <BackButton />
         <h1 className="text-xl font-extrabold leading-tight tracking-tight text-text-main">
           アイテム登録
         </h1>
-        <Link
-          href={`/cms/shops/${shopId}`}
+        <button
+          onClick={() => router.back()}
           className="text-text-muted font-bold text-sm px-2 hover:text-text-main transition-colors"
         >
           キャンセル
-        </Link>
+        </button>
       </header>
 
       <main className="flex-1 flex flex-col gap-6 px-6 pb-32 overflow-y-auto">
