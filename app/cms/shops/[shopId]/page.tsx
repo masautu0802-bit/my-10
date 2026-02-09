@@ -4,6 +4,7 @@ import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentUser, checkShopOwnership } from "@/app/lib/auth/session";
 import BottomNav from "@/app/components/BottomNav";
 import ItemList from "./ItemList";
+import DeleteShopButton from "./DeleteShopButton";
 
 async function getShopCMSData(shopId: string) {
   const supabase = await createClient();
@@ -196,6 +197,22 @@ export default async function ShopCMSPage({
         </section>
 
         <ItemList initialItems={items} shopId={shopId} />
+
+        {/* Delete Shop Section */}
+        <section className="px-4 pb-8">
+          <div className="bg-white rounded-2xl p-6 border border-coral/20 shadow-sm">
+            <h3 className="text-text-main text-lg font-bold mb-2 flex items-center gap-2">
+              <span className="material-symbols-outlined text-coral">
+                warning
+              </span>
+              危険な操作
+            </h3>
+            <p className="text-text-main/70 text-sm mb-4">
+              ショップを削除すると、すべての商品、フォロワー情報も削除されます。この操作は取り消せません。
+            </p>
+            <DeleteShopButton shopId={shopId} />
+          </div>
+        </section>
       </main>
 
       <BottomNav />

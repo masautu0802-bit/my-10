@@ -20,7 +20,10 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "mcp__supabase__get_logs",
+      "Bash(mcp__supabase__get_logs:*)",
+      "Bash(find:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -163,3 +163,51 @@ export async function createShop(formData: {
   revalidatePath('/')
   return { shopId: shop.id }
 }
+
+export async function deleteShop(shopId: string) {
+  const user = await requireAuth()
+  const supabase = await createClient()
+
+  // Check ownership
+  const { data: shop } = await supabase
+    .from('shops')
+    .select('owner_id')
+    .eq('id', shopId)
+    .single()
+
+  if (!shop || shop.owner_id !== user.id) {
+    return { error: 'このショップを削除する権限がありません' }
+  }
+
+  // Get all items for this shop
+  const { data: items } = await supabase
+    .from('items')
+    .select('id')
+    .eq('shop_id', shopId)
+
+  const itemIds = items?.map((item) => item.id) || []
+
+  // Delete in order (foreign key constraints)
+  // 1. Delete item_favorites (references items)
+  if (itemIds.length > 0) {
+    await supabase.from('item_favorites').delete().in('item_id', itemIds)
+  }
+
+  // 2. Delete items (references shops)
+  await supabase.from('items').delete().eq('shop_id', shopId)
+
+  // 3. Delete shop_follows (references shops)
+  await supabase.from('shop_follows').delete().eq('shop_id', shopId)
+
+  // 4. Delete shop
+  const { error } = await supabase.from('shops').delete().eq('id', shopId)
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/shop')
+  revalidatePath('/my')
+  revalidatePath('/')
+  return { success: true }
+}

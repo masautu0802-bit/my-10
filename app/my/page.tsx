@@ -4,6 +4,7 @@ import BottomNav from "@/app/components/BottomNav";
 import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentUser, getCurrentUserProfile } from "@/app/lib/auth/session";
 import MyPageTabs from "./MyPageTabs";
+import LogoutButton from "./LogoutButton";
 
 async function getMyPageData(userId: string) {
   const supabase = await createClient();
@@ -88,6 +89,7 @@ export default async function MyPage() {
               </span>
               {profile?.name || "プロフィール"}
             </Link>
+            <LogoutButton />
           </div>
         </div>
       </header>
