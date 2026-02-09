@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
-type ShopItem = { id: string; name: string; image_url: string };
+type ShopItem = { id: string; name: string; image_url: string | null };
 
 type Shop = {
   id: string;

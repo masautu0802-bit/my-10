@@ -23,7 +23,10 @@
       "Bash(git rm:*)",
       "mcp__supabase__get_logs",
       "Bash(mcp__supabase__get_logs:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "mcp__supabase__list_extensions",
+      "WebSearch",
+      "Bash(npx supabase:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

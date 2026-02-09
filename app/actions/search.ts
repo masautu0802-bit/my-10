@@ -29,7 +29,7 @@ export type SearchResult = {
     shop_name: string
     owner_name: string
     item_name: string
-    item_image: string
+    item_image: string | null
   }>
 }
 

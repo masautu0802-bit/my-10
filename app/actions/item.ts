@@ -3,21 +3,55 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/app/lib/supabase/server'
 import { requireAuth } from '@/app/lib/auth/session'
-import { fetchAmazonProductImage as fetchImageUtil } from '@/app/lib/utils/amazon'
 
-export async function fetchAmazonProductImage(amazonUrl: string) {
-  await requireAuth() // 認証チェック
-  return fetchImageUtil(amazonUrl)
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+
+export async function uploadItemImage(formData: FormData) {
+  const user = await requireAuth()
+  const supabase = await createClient()
+
+  const file = formData.get('file') as File | null
+  if (!file) {
+    return { error: 'ファイルが選択されていません' }
+  }
+
+  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    return { error: '対応していないファイル形式です（JPEG, PNG, WebP, SVG のみ）' }
+  }
+
+  if (file.size > MAX_FILE_SIZE) {
+    return { error: 'ファイルサイズが5MBを超えています' }
+  }
+
+  const fileExt = file.name.split('.').pop()
+  const fileName = `${user.id}-${Date.now()}.${fileExt}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('item-images')
+    .upload(fileName, file, {
+      cacheControl: '3600',
+      upsert: true,
+    })
+
+  if (uploadError) {
+    return { error: uploadError.message }
+  }
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from('item-images').getPublicUrl(fileName)
+
+  return { url: publicUrl }
 }
 
 export async function createItem(formData: {
   shopId: string
-  amazonUrl: string
-  name?: string
+  name: string
+  ecUrl?: string
+  imageUrl?: string
   priceRange?: string
   comment?: string
-  imageUrl?: string
-  manualMode?: boolean
 }) {
   const user = await requireAuth()
   const supabase = await createClient()
@@ -43,28 +77,6 @@ export async function createItem(formData: {
     return { error: 'アイテムは最大10個までです' }
   }
 
-  let itemName = formData.name || '商品名未設定'
-  let itemImageUrl = formData.imageUrl || ''
-  let itemPrice = formData.priceRange || null
-
-  // 手動モードでない場合のみAmazonからデータを取得
-  if (!formData.manualMode) {
-    const amazonData = await fetchImageUtil(formData.amazonUrl)
-
-    // 完全なエラー（部分成功でない場合）
-    if ('error' in amazonData && !('imageUrl' in amazonData) && !('title' in amazonData) && !('price' in amazonData)) {
-      return { error: amazonData.error }
-    }
-
-    const fetchedTitle = 'title' in amazonData ? amazonData.title : undefined
-    const fetchedImage = 'imageUrl' in amazonData ? amazonData.imageUrl : undefined
-    const fetchedPrice = 'price' in amazonData ? amazonData.price : undefined
-
-    itemName = formData.name || fetchedTitle || '商品名未設定'
-    itemImageUrl = fetchedImage || ''
-    itemPrice = formData.priceRange || fetchedPrice || null
-  }
-
   // 次のorder_indexを取得
   const { data: maxOrderItem } = await supabase
     .from('items')
@@ -81,11 +93,11 @@ export async function createItem(formData: {
     .from('items')
     .insert({
       shop_id: formData.shopId,
-      name: itemName,
-      ec_url: formData.amazonUrl,
-      image_url: itemImageUrl,
-      price_range: itemPrice,
-      comment: formData.comment,
+      name: formData.name,
+      ec_url: formData.ecUrl || null,
+      image_url: formData.imageUrl || null,
+      price_range: formData.priceRange || null,
+      comment: formData.comment || null,
       order_index: nextOrderIndex,
     })
     .select('id')
@@ -167,47 +179,4 @@ export async function reorderItems(shopId: string, itemIds: string[]) {
   revalidatePath(`/shops/${shopId}`)
   revalidatePath('/')
   return {}
-}
-
-export async function updateItemPrice(itemId: string) {
-  const supabase = await createClient()
-
-  // アイテム情報を取得
-  const { data: item } = await supabase
-    .from('items')
-    .select('ec_url, shop_id')
-    .eq('id', itemId)
-    .single()
-
-  if (!item || !item.ec_url) {
-    return { error: 'アイテムまたはURLが見つかりません' }
-  }
-
-  // Amazon URLから価格を取得
-  const amazonData = await fetchImageUtil(item.ec_url)
-
-  // 完全なエラー
-  if ('error' in amazonData && !('price' in amazonData)) {
-    return { error: `価格取得失敗: ${amazonData.error}` }
-  }
-
-  const fetchedPrice = 'price' in amazonData ? amazonData.price : undefined
-  if (!fetchedPrice) {
-    return { error: '価格情報が見つかりませんでした（在庫切れまたは価格非表示の可能性があります）' }
-  }
-
-  // 価格を更新
-  const { error } = await supabase
-    .from('items')
-    .update({ price_range: fetchedPrice })
-    .eq('id', itemId)
-
-  if (error) {
-    return { error: `DB更新エラー: ${error.message}` }
-  }
-
-  revalidatePath(`/items/${itemId}`)
-  revalidatePath(`/shops/${item.shop_id}`)
-  revalidatePath('/')
-  return { price: fetchedPrice }
 }

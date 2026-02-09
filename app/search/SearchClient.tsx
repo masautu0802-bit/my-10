@@ -340,15 +340,23 @@ export default function SearchClient() {
                       className="block bg-white rounded-xl overflow-hidden shadow-sm border border-sage/10 hover:border-sage/30 transition-all group"
                     >
                       <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden">
-                        <div className="absolute inset-0 p-3">
-                          <Image
-                            src={item.item_image}
-                            alt={item.item_name}
-                            fill
-                            className="object-contain transition-transform duration-700 group-hover:scale-105"
-                            sizes="(max-width: 768px) 45vw, 200px"
-                          />
-                        </div>
+                        {item.item_image ? (
+                          <div className="absolute inset-0 p-3">
+                            <Image
+                              src={item.item_image}
+                              alt={item.item_name}
+                              fill
+                              className="object-contain transition-transform duration-700 group-hover:scale-105"
+                              sizes="(max-width: 768px) 45vw, 200px"
+                            />
+                          </div>
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-gray-300 text-5xl">
+                              image
+                            </span>
+                          </div>
+                        )}
                         <div className="absolute inset-0 pointer-events-none">
                           <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-gray-50/40 to-transparent" />
                           <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-gray-100/40 to-transparent" />

@@ -7,7 +7,7 @@ import { reorderItems, deleteItem } from "@/app/actions/item";
 type Item = {
   id: string;
   name: string;
-  image_url: string;
+  image_url: string | null;
   price_range: string | null;
   order_index: number;
 };

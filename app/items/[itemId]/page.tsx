@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentUser } from "@/app/lib/auth/session";
 import FavoriteButton from "./FavoriteButton";
-import PriceUpdater from "./PriceUpdater";
 
 async function getItemData(itemId: string) {
   const supabase = await createClient();
@@ -107,7 +106,6 @@ export default async function ItemDetailPage({
           ) : (
             <div className="w-full h-full bg-gray-300 rounded-bl-[40px]" />
           )}
-          <PriceUpdater itemId={itemId} initialPrice={item.price_range} />
         </div>
 
         {/* Item Info */}

@@ -3,7 +3,7 @@ import BottomNav from "@/app/components/BottomNav";
 import ShopGrid from "@/app/components/ShopGrid";
 import { createClient } from "@/app/lib/supabase/server";
 
-type ShopItem = { id: string; name: string; image_url: string };
+type ShopItem = { id: string; name: string; image_url: string | null };
 
 type TagCategory = {
   name: string;

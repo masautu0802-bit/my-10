@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { updateItemPrice } from "@/app/actions/item";
 import FavoriteButton from "./FavoriteButton";
 
 type Item = {
   id: string;
   name: string;
-  image_url: string;
+  image_url: string | null;
   price_range: string | null;
 };
 
@@ -32,47 +30,9 @@ export default function ShopItemsWithPriceUpdate({
   initialItems: Item[];
   favorites: Set<string>;
 }) {
-  const [items, setItems] = useState(initialItems);
-
-  useEffect(() => {
-    // 価格が未設定の商品の価格を更新（最初の3つまで、順番に実行）
-    const itemsToUpdate = items
-      .filter((item) => !item.price_range)
-      .slice(0, 3);
-
-    async function updatePrices() {
-      for (const item of itemsToUpdate) {
-        try {
-          const result = await updateItemPrice(item.id);
-          if (result.price) {
-            setItems((prev) =>
-              prev.map((i) =>
-                i.id === item.id ? { ...i, price_range: result.price! } : i
-              )
-            );
-          } else if (result.error) {
-            setItems((prev) =>
-              prev.map((i) =>
-                i.id === item.id ? { ...i, price_range: "価格取得失敗" } : i
-              )
-            );
-          }
-        } catch {
-          setItems((prev) =>
-            prev.map((i) =>
-              i.id === item.id ? { ...i, price_range: "価格取得失敗" } : i
-            )
-          );
-        }
-      }
-    }
-
-    updatePrices();
-  }, []);
-
   return (
     <div className="masonry-grid px-4 pt-2 pb-8">
-      {items.map((item, i) => (
+      {initialItems.map((item, i) => (
         <div key={item.id} className="masonry-item group relative">
           <Link
             href={`/items/${item.id}`}
@@ -98,7 +58,7 @@ export default function ShopItemsWithPriceUpdate({
                 {item.name}
               </h4>
               <p className="text-sm font-bold text-text-main mt-1">
-                {item.price_range || "価格取得中..."}
+                {item.price_range || "価格未設定"}
               </p>
             </div>
           </Link>
