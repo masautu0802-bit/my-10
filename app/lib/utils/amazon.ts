@@ -132,7 +132,7 @@ export async function fetchAmazonProductImage(
     // パターン2: apexPriceToPay
     if (!price) {
       const apexMatch = html.match(
-        /apexPriceToPay[^>]*>.*?<span[^>]*>([¥$€£]?[\d,]+)/s
+        /apexPriceToPay[^>]*>[\s\S]*?<span[^>]*>([¥$€£]?[\d,]+)/
       );
       if (apexMatch) {
         price = apexMatch[1].replace(/[,\s]/g, "").trim();
@@ -162,7 +162,7 @@ export async function fetchAmazonProductImage(
     // パターン5: corePriceDisplay
     if (!price) {
       const corePriceMatch = html.match(
-        /corePriceDisplay[^>]*>.*?<span class="a-offscreen">([¥$€£]?[\d,]+)/s
+        /corePriceDisplay[^>]*>[\s\S]*?<span class="a-offscreen">([¥$€£]?[\d,]+)/
       );
       if (corePriceMatch) {
         price = corePriceMatch[1].replace(/[,\s]/g, "").trim();
@@ -182,7 +182,7 @@ export async function fetchAmazonProductImage(
     // パターン7: data-a-color="price"
     if (!price) {
       const priceColorMatch = html.match(
-        /data-a-color="price"[^>]*>.*?([¥$€£]?[\d,]+)/s
+        /data-a-color="price"[^>]*>[\s\S]*?([¥$€£]?[\d,]+)/
       );
       if (priceColorMatch) {
         price = priceColorMatch[1].replace(/[,\s]/g, "").trim();
