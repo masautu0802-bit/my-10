@@ -13,8 +13,45 @@ export async function fetchAmazonProductImage(
       return { error: "無効なURLです。正しいURLを入力してください" };
     }
 
-    if (!url.hostname.includes("amazon.co.jp") && !url.hostname.includes("amazon.com")) {
-      return { error: "Amazon URLを入力してください（amazon.co.jp または amazon.com）" };
+    const isAmazonDomain = url.hostname.includes("amazon.co.jp") || url.hostname.includes("amazon.com");
+    const isShortLink = url.hostname === "amzn.to" || url.hostname === "amzn.asia";
+
+    if (!isAmazonDomain && !isShortLink) {
+      return { error: "Amazon URLを入力してください（amazon.co.jp、amazon.com、amzn.to、amzn.asia）" };
+    }
+
+    // 短縮URLの場合はリダイレクト先を取得
+    if (isShortLink) {
+      try {
+        const redirectController = new AbortController();
+        const redirectTimeout = setTimeout(() => redirectController.abort(), 10000);
+        const redirectRes = await fetch(amazonUrl, {
+          signal: redirectController.signal,
+          redirect: "manual",
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+          },
+        });
+        clearTimeout(redirectTimeout);
+
+        const location = redirectRes.headers.get("location");
+        if (!location) {
+          return { error: "短縮URLのリダイレクト先を取得できませんでした" };
+        }
+
+        amazonUrl = location;
+        url = new URL(amazonUrl);
+
+        if (!url.hostname.includes("amazon.co.jp") && !url.hostname.includes("amazon.com")) {
+          return { error: "このリンクはAmazonの商品ページではありません" };
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") {
+          return { error: "タイムアウト: 短縮URLの解決に時間がかかりすぎました" };
+        }
+        return { error: `短縮URLの解決に失敗しました: ${err instanceof Error ? err.message : "不明なエラー"}` };
+      }
     }
 
     // タイムアウト付きfetch（10秒）
