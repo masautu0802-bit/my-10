@@ -28,16 +28,18 @@ async function getMyPageData(userId: string) {
   const shopIds = shopList.map((s) => s.id);
 
   // Batch: get first item images for all followed shops in one query
-  const { data: allItems } = shopIds.length > 0
-    ? await supabase
-        .from("items")
-        .select("shop_id, image_url, order_index")
-        .in("shop_id", shopIds)
-        .order("order_index", { ascending: true })
-    : { data: [] };
+  let allItems: Array<{ shop_id: string; image_url: string | null; order_index: number }> = [];
+  if (shopIds.length > 0) {
+    const { data } = await supabase
+      .from("items")
+      .select("shop_id, image_url, order_index")
+      .in("shop_id", shopIds)
+      .order("order_index", { ascending: true });
+    allItems = data || [];
+  }
 
   const firstItemImageMap: Record<string, string | null> = {};
-  allItems?.forEach((item) => {
+  allItems.forEach((item) => {
     if (!(item.shop_id in firstItemImageMap)) {
       firstItemImageMap[item.shop_id] = item.image_url;
     }

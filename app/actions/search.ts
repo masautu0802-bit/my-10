@@ -159,6 +159,8 @@ export async function getPopularTags() {
   // Collect all relevant shop IDs
   const allShopIds = [...new Set(topTags.flatMap((tag) => tagShopIds[tag] || []))]
 
+  if (allShopIds.length === 0) return []
+
   // Batch: get all follows and items in 2 queries
   const [{ data: allFollows }, { data: allItems }] = await Promise.all([
     supabase.from('shop_follows').select('shop_id').in('shop_id', allShopIds),
