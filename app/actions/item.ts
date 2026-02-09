@@ -16,6 +16,8 @@ export async function createItem(formData: {
   name?: string
   priceRange?: string
   comment?: string
+  imageUrl?: string
+  manualMode?: boolean
 }) {
   const user = await requireAuth()
   const supabase = await createClient()
@@ -41,11 +43,21 @@ export async function createItem(formData: {
     return { error: 'アイテムは最大10個までです' }
   }
 
-  // Amazon URLから画像とタイトルを取得
-  const amazonData = await fetchImageUtil(formData.amazonUrl)
+  let itemName = formData.name || '商品名未設定'
+  let itemImageUrl = formData.imageUrl || ''
+  let itemPrice = formData.priceRange || null
 
-  if ('error' in amazonData) {
-    return { error: amazonData.error }
+  // 手動モードでない場合のみAmazonからデータを取得
+  if (!formData.manualMode) {
+    const amazonData = await fetchImageUtil(formData.amazonUrl)
+
+    if ('error' in amazonData) {
+      return { error: amazonData.error }
+    }
+
+    itemName = formData.name || amazonData.title || '商品名未設定'
+    itemImageUrl = amazonData.imageUrl
+    itemPrice = formData.priceRange || amazonData.price || null
   }
 
   // 次のorder_indexを取得
@@ -64,10 +76,10 @@ export async function createItem(formData: {
     .from('items')
     .insert({
       shop_id: formData.shopId,
-      name: formData.name || amazonData.title || '商品名未設定',
+      name: itemName,
       ec_url: formData.amazonUrl,
-      image_url: amazonData.imageUrl,
-      price_range: formData.priceRange || amazonData.price || null,
+      image_url: itemImageUrl,
+      price_range: itemPrice,
       comment: formData.comment,
       order_index: nextOrderIndex,
     })

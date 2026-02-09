@@ -15,11 +15,14 @@ export default function NewItemPage({
   const [name, setName] = useState("");
   const [priceRange, setPriceRange] = useState("");
   const [comment, setComment] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [previewImage, setPreviewImage] = useState<string>("");
   const [autoFetchedTitle, setAutoFetchedTitle] = useState<string>("");
   const [autoFetchedPrice, setAutoFetchedPrice] = useState<string>("");
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [error, setError] = useState("");
+  const [fetchError, setFetchError] = useState("");
+  const [manualMode, setManualMode] = useState(false);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -36,12 +39,13 @@ export default function NewItemPage({
 
     setIsLoadingPreview(true);
     setError("");
+    setFetchError("");
 
     try {
       const result = await fetchAmazonProductImage(amazonUrl.trim());
 
       if ("error" in result) {
-        setError(result.error);
+        setFetchError(result.error);
         setPreviewImage("");
         setAutoFetchedTitle("");
         setAutoFetchedPrice("");
@@ -55,10 +59,11 @@ export default function NewItemPage({
         if (!priceRange.trim() && result.price) {
           setPriceRange(result.price);
         }
-        setError("");
+        setFetchError("");
+        setManualMode(false);
       }
-    } catch (err) {
-      setError("画像の取得に失敗しました");
+    } catch {
+      setFetchError("画像の取得に失敗しました");
       setPreviewImage("");
       setAutoFetchedTitle("");
     } finally {
@@ -66,9 +71,20 @@ export default function NewItemPage({
     }
   };
 
+  const handleManualMode = () => {
+    setManualMode(true);
+    setFetchError("");
+    setError("");
+  };
+
   const handleSubmit = () => {
     if (!amazonUrl.trim()) {
       setError("Amazon URLを入力してください");
+      return;
+    }
+
+    if (manualMode && !name.trim()) {
+      setError("手動入力モードでは商品名は必須です");
       return;
     }
 
@@ -80,6 +96,8 @@ export default function NewItemPage({
         name: name.trim() || undefined,
         priceRange: priceRange.trim() || undefined,
         comment: comment.trim() || undefined,
+        imageUrl: manualMode ? imageUrl.trim() || undefined : undefined,
+        manualMode,
       });
 
       if (result.error) {
@@ -154,6 +172,39 @@ export default function NewItemPage({
           </p>
         </div>
 
+        {/* 取得失敗時の選択肢 */}
+        {fetchError && !manualMode && (
+          <div className="bg-coral/10 border border-coral/30 rounded-2xl p-4 space-y-3">
+            <p className="text-coral text-sm font-medium text-center">
+              {fetchError}
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handleManualMode}
+                className="flex-1 bg-sage text-white font-bold text-sm py-3 rounded-xl hover:bg-sage/90 transition-all"
+              >
+                手動で入力して登録
+              </button>
+              <Link
+                href={`/cms/shops/${shopId}`}
+                className="flex-1 bg-white text-text-muted font-bold text-sm py-3 rounded-xl border border-sage/30 hover:bg-gray-50 transition-all text-center"
+              >
+                キャンセル
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* 手動入力モード表示 */}
+        {manualMode && (
+          <div className="bg-sage/10 border border-sage/30 rounded-2xl p-4">
+            <p className="text-sage text-sm font-medium text-center">
+              手動入力モード: 商品情報を直接入力してください
+            </p>
+          </div>
+        )}
+
         {/* プレビュー画像 */}
         {previewImage && (
           <div className="flex flex-col gap-2">
@@ -184,17 +235,33 @@ export default function NewItemPage({
           </div>
         )}
 
+        {/* 画像URL（手動モード時のみ） */}
+        {manualMode && (
+          <div className="flex flex-col gap-2">
+            <label className="text-[11px] font-bold text-text-muted ml-2 uppercase tracking-wider">
+              画像URL
+            </label>
+            <input
+              className="w-full bg-white border-2 border-sage rounded-2xl px-5 py-4 text-base font-semibold focus:outline-none focus:border-text-main focus:ring-0 transition-all placeholder:text-slate-300 text-text-main shadow-sm hover:border-text-main/50"
+              type="url"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="画像URLを入力（任意）"
+            />
+          </div>
+        )}
+
         {/* 商品名 */}
         <div className="flex flex-col gap-2">
           <label className="text-[11px] font-bold text-text-muted ml-2 uppercase tracking-wider">
-            商品名
+            商品名 {manualMode && <span className="text-coral">*</span>}
           </label>
           <input
             className="w-full bg-white border-2 border-sage rounded-2xl px-5 py-4 text-base font-semibold focus:outline-none focus:border-text-main focus:ring-0 transition-all placeholder:text-slate-300 text-text-main shadow-sm hover:border-text-main/50"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="自動取得されたタイトルを使用（空欄可）"
+            placeholder={manualMode ? "商品名を入力してください" : "自動取得されたタイトルを使用（空欄可）"}
           />
         </div>
 
@@ -238,7 +305,7 @@ export default function NewItemPage({
         <div className="mt-2 pb-4">
           <button
             onClick={handleSubmit}
-            disabled={isPending || !amazonUrl.trim()}
+            disabled={isPending || !amazonUrl.trim() || (!manualMode && !previewImage && !fetchError)}
             className="w-full bg-text-main hover:bg-text-main/90 text-white font-extrabold text-lg py-4 rounded-2xl shadow-lg shadow-text-main/20 transition-all active:scale-[0.98] active:shadow-none flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {isPending ? (
