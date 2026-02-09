@@ -35,20 +35,25 @@ export default function ShopSettingsForm({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const colorThemes = dbColorThemes.map(convertDbThemeToColorTheme);
+  const colorThemes: ColorTheme[] =
+    dbColorThemes.map(convertDbThemeToColorTheme);
   const currentColorTheme = parseColorTheme(shop.color_theme);
   const currentFont = shop.font_family || "Noto Sans JP";
 
-  const [selectedFont, setSelectedFont] = useState(currentFont);
-  const [selectedTheme, setSelectedTheme] = useState<ColorTheme>(
-    currentColorTheme ||
-      colorThemes.find(
+  const initialTheme: ColorTheme = (() => {
+    if (currentColorTheme) {
+      const found = colorThemes.find(
         (t) =>
-          t.primary === currentColorTheme?.primary &&
-          t.secondary === currentColorTheme?.secondary
-      ) ||
-      colorThemes[0]
-  );
+          t.primary === currentColorTheme.primary &&
+          t.secondary === currentColorTheme.secondary
+      );
+      return found ?? colorThemes[0];
+    }
+    return colorThemes[0];
+  })();
+
+  const [selectedFont, setSelectedFont] = useState(currentFont);
+  const [selectedTheme, setSelectedTheme] = useState<ColorTheme>(initialTheme);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
