@@ -44,26 +44,42 @@ export default function NewItemPage({
     try {
       const result = await fetchAmazonProductImage(amazonUrl.trim());
 
-      if ("error" in result) {
-        setFetchError(result.error);
+      if ("error" in result && !("imageUrl" in result) && !("title" in result) && !("price" in result)) {
+        // 完全な失敗
+        setFetchError(result.error as string);
         setPreviewImage("");
         setAutoFetchedTitle("");
         setAutoFetchedPrice("");
       } else {
-        setPreviewImage(result.imageUrl);
-        setAutoFetchedTitle(result.title);
-        setAutoFetchedPrice(result.price || "");
-        if (!name.trim()) {
-          setName(result.title);
+        // 成功または部分成功
+        const imageUrl = "imageUrl" in result ? result.imageUrl || "" : "";
+        const title = "title" in result ? result.title || "" : "";
+        const price = "price" in result ? result.price || "" : "";
+
+        setPreviewImage(imageUrl);
+        setAutoFetchedTitle(title);
+        setAutoFetchedPrice(price);
+
+        if (imageUrl) setImageUrl(imageUrl);
+        if (!name.trim() && title) setName(title);
+        if (!priceRange.trim() && price) setPriceRange(price);
+
+        // 部分的に取得できなかった項目がある場合は手動モードに切り替え
+        const missing: string[] = [];
+        if (!imageUrl) missing.push("画像");
+        if (!title) missing.push("商品名");
+        if (!price) missing.push("価格");
+
+        if (missing.length > 0) {
+          setManualMode(true);
+          setFetchError(`${missing.join("・")}を自動取得できませんでした。手動で入力してください`);
+        } else {
+          setFetchError("");
+          setManualMode(false);
         }
-        if (!priceRange.trim() && result.price) {
-          setPriceRange(result.price);
-        }
-        setFetchError("");
-        setManualMode(false);
       }
     } catch {
-      setFetchError("画像の取得に失敗しました");
+      setFetchError("商品情報の取得に失敗しました");
       setPreviewImage("");
       setAutoFetchedTitle("");
     } finally {
@@ -168,7 +184,7 @@ export default function NewItemPage({
             </button>
           </div>
           <p className="text-xs text-text-muted ml-2">
-            Amazon商品ページのURLを入力して「取得」をクリックすると、画像とタイトルが自動取得されます
+            Amazon商品ページのリンクまたはURLを貼り付けて「取得」をクリックすると、画像とタイトルが自動取得されます（amazon.co.jp、amazon.com、amzn.to、amzn.asia対応）
           </p>
         </div>
 

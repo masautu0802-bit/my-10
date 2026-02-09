@@ -51,13 +51,18 @@ export async function createItem(formData: {
   if (!formData.manualMode) {
     const amazonData = await fetchImageUtil(formData.amazonUrl)
 
-    if ('error' in amazonData) {
+    // 完全なエラー（部分成功でない場合）
+    if ('error' in amazonData && !('imageUrl' in amazonData) && !('title' in amazonData) && !('price' in amazonData)) {
       return { error: amazonData.error }
     }
 
-    itemName = formData.name || amazonData.title || '商品名未設定'
-    itemImageUrl = amazonData.imageUrl
-    itemPrice = formData.priceRange || amazonData.price || null
+    const fetchedTitle = 'title' in amazonData ? amazonData.title : undefined
+    const fetchedImage = 'imageUrl' in amazonData ? amazonData.imageUrl : undefined
+    const fetchedPrice = 'price' in amazonData ? amazonData.price : undefined
+
+    itemName = formData.name || fetchedTitle || '商品名未設定'
+    itemImageUrl = fetchedImage || ''
+    itemPrice = formData.priceRange || fetchedPrice || null
   }
 
   // 次のorder_indexを取得
@@ -181,18 +186,20 @@ export async function updateItemPrice(itemId: string) {
   // Amazon URLから価格を取得
   const amazonData = await fetchImageUtil(item.ec_url)
 
-  if ('error' in amazonData) {
+  // 完全なエラー
+  if ('error' in amazonData && !('price' in amazonData)) {
     return { error: `価格取得失敗: ${amazonData.error}` }
   }
 
-  if (!amazonData.price) {
+  const fetchedPrice = 'price' in amazonData ? amazonData.price : undefined
+  if (!fetchedPrice) {
     return { error: '価格情報が見つかりませんでした（在庫切れまたは価格非表示の可能性があります）' }
   }
 
   // 価格を更新
   const { error } = await supabase
     .from('items')
-    .update({ price_range: amazonData.price })
+    .update({ price_range: fetchedPrice })
     .eq('id', itemId)
 
   if (error) {
@@ -202,5 +209,5 @@ export async function updateItemPrice(itemId: string) {
   revalidatePath(`/items/${itemId}`)
   revalidatePath(`/shops/${item.shop_id}`)
   revalidatePath('/')
-  return { price: amazonData.price }
+  return { price: fetchedPrice }
 }
