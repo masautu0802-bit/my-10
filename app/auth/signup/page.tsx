@@ -44,7 +44,8 @@ export default function SignUpPage() {
 
   const handleGoogleSignIn = () => {
     startTransition(async () => {
-      const result = await signInWithGoogle();
+      const origin = window.location.origin;
+      const result = await signInWithGoogle(origin);
       if (result.error) {
         setError(result.error);
       } else if (result.url) {
