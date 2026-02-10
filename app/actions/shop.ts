@@ -98,9 +98,14 @@ export async function updateProfile(formData: {
 
   const updateData: {
     name: string
+    bio?: string | null
     avatar_url?: string | null
   } = {
     name: formData.name,
+  }
+
+  if (formData.bio !== undefined) {
+    updateData.bio = formData.bio || null
   }
 
   if (formData.avatar_url !== undefined) {
@@ -115,6 +120,7 @@ export async function updateProfile(formData: {
 
   revalidatePath('/my')
   revalidatePath('/my/profile')
+  revalidatePath(`/users/${user.id}`)
   return {}
 }
 

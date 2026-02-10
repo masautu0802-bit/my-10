@@ -14,6 +14,7 @@ const navItems: NavItem[] = [
   { href: "/", icon: "home", iconFilled: "home", label: "ホーム" },
   { href: "/search", icon: "search", label: "さがす" },
   { href: "/shop", icon: "storefront", label: "ショップ" },
+  { href: "/my/keep", icon: "bookmark", iconFilled: "bookmark", label: "キープ" },
   { href: "/my", icon: "person", iconFilled: "person", label: "マイページ" },
 ];
 
@@ -25,8 +26,10 @@ export default function BottomNav() {
       <div className="flex justify-around items-center h-16">
         {navItems.map((item) => {
           const isActive =
-            pathname === item.href ||
-            (item.href !== "/" && pathname.startsWith(item.href));
+            item.href === "/my"
+              ? pathname === "/my" || (pathname.startsWith("/my") && !pathname.startsWith("/my/keep"))
+              : pathname === item.href ||
+                (item.href !== "/" && pathname.startsWith(item.href));
           return (
             <Link
               key={item.label}

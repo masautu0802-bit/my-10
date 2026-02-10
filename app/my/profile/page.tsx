@@ -18,6 +18,7 @@ export default async function ProfileEditPage() {
         <ProfileForm
           initialName={profile?.name || ""}
           initialAvatarUrl={profile?.avatar_url}
+          initialBio={profile?.bio ?? undefined}
         />
       </main>
 

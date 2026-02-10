@@ -8,11 +8,14 @@ import Image from "next/image";
 export default function ProfileForm({
   initialName,
   initialAvatarUrl,
+  initialBio,
 }: {
   initialName: string;
   initialAvatarUrl?: string | null;
+  initialBio?: string | null;
 }) {
   const [name, setName] = useState(initialName);
+  const [bio, setBio] = useState(initialBio || "");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(
     initialAvatarUrl || null
   );
@@ -74,6 +77,7 @@ export default function ProfileForm({
     startTransition(async () => {
       const result = await updateProfile({
         name: name.trim(),
+        bio: bio.trim() || undefined,
         avatar_url: newAvatarUrl,
       });
       if (result.error) {
@@ -140,6 +144,23 @@ export default function ProfileForm({
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label className="text-[11px] font-bold text-text-muted ml-2 uppercase tracking-wider">
+            自己紹介
+          </label>
+          <textarea
+            className="w-full bg-white border-2 border-sage rounded-2xl px-5 py-4 text-base font-semibold focus:outline-none focus:border-text-main focus:ring-0 transition-all placeholder:text-slate-300 text-text-main shadow-sm hover:border-text-main/50 resize-none"
+            rows={4}
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            placeholder="あなたについて教えてください（任意）"
+            maxLength={200}
+          />
+          <p className="text-xs text-text-muted ml-2">
+            {bio.length}/200文字
+          </p>
         </div>
       </div>
 

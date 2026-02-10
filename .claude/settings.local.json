@@ -27,7 +27,9 @@
       "mcp__supabase__list_extensions",
       "WebSearch",
       "Bash(npx supabase:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npm run start:*)",
+      "Bash(PWD=/tmp/my-10-link node:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
