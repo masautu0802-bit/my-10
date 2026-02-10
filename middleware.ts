@@ -52,8 +52,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Redirect to home if accessing auth pages while authenticated
-  if (isAuthRoute && user) {
+  // If authenticated user visits auth pages, redirect to home
+  // Only redirect if there's no redirect param (avoid loop with stale sessions)
+  if (isAuthRoute && user && !request.nextUrl.searchParams.has('redirect')) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)
