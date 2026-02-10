@@ -2,6 +2,7 @@ import Link from "next/link";
 import BottomNav from "@/app/components/BottomNav";
 import ShopGrid from "@/app/components/ShopGrid";
 import { createClient } from "@/app/lib/supabase/server";
+import { getCurrentUser } from "@/app/lib/auth/session";
 
 type ShopItem = { id: string; name: string; image_url: string | null };
 
@@ -164,7 +165,7 @@ async function getShops() {
 }
 
 export default async function Home() {
-  const [shops, categories] = await Promise.all([getShops(), getTopTags()]);
+  const [shops, categories, user] = await Promise.all([getShops(), getTopTags(), getCurrentUser()]);
 
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-[#E5E7EB] shadow-2xl">
@@ -192,12 +193,26 @@ export default async function Home() {
               search
             </span>
           </Link>
-          <button className="p-3 rounded-2xl bg-gray-50 border border-gray-100 transition-all hover:shadow-md active:scale-95 text-[#2a2a2a] relative">
-            <span className="material-symbols-outlined text-[20px]">
-              notifications
-            </span>
-            <span className="absolute top-2 right-2.5 w-2 h-2 bg-coral rounded-full border border-white" />
-          </button>
+          {user ? (
+            <Link
+              href="/my"
+              className="p-3 rounded-2xl bg-gray-50 border border-gray-100 transition-all hover:shadow-md active:scale-95 text-[#2a2a2a]"
+            >
+              <span className="material-symbols-outlined text-[20px]">
+                person
+              </span>
+            </Link>
+          ) : (
+            <Link
+              href="/auth/login"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-sage text-white text-sm font-bold transition-all hover:bg-sage/90 active:scale-95"
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                login
+              </span>
+              <span>ログイン</span>
+            </Link>
+          )}
         </div>
       </header>
 
