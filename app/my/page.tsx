@@ -10,7 +10,7 @@ async function getProfileData(userId: string) {
   const supabase = await createClient();
 
   // ユーザー情報取得
-  const { data: user } = await supabase
+  const { data: user, error: userError } = await supabase
     .from("users")
     .select("id, name, avatar_url, bio")
     .eq("id", userId)
