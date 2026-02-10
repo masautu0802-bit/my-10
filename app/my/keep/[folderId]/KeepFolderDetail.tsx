@@ -56,7 +56,7 @@ export default function KeepFolderDetail({ folder }: { folder: Folder }) {
   }
 
   return (
-    <main className="flex-1 overflow-y-auto pb-24">
+    <main className="flex-1 overflow-y-auto pb-[var(--bottom-nav-safe)]">
       {/* Folder actions */}
       <div className="px-4 py-3 flex items-center justify-between">
         {isEditing ? (

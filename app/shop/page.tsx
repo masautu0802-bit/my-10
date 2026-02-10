@@ -25,7 +25,7 @@ export default async function ShopHubPage() {
         </div>
       </header>
 
-      <main className="flex-1 px-4 pb-32">
+      <main className="flex-1 px-4 pb-[var(--bottom-nav-safe)]">
         {/* Owned shops */}
         {ownedShops && ownedShops.length > 0 ? (
           <div className="pt-4 pb-2">

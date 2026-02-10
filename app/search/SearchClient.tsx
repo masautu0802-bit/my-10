@@ -85,7 +85,7 @@ export default function SearchClient() {
     results.byItemName.length;
 
   return (
-    <div className="min-h-screen bg-bgwarm pb-32 max-w-md mx-auto shadow-2xl">
+    <div className="min-h-screen bg-bgwarm pb-[var(--bottom-nav-safe)] max-w-md mx-auto shadow-2xl">
       {/* Header with Search Bar */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-lg px-6 py-5 border-b border-sage/10">
         <div className="flex items-center gap-3">

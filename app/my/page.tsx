@@ -133,7 +133,7 @@ export default async function MyPage() {
         </div>
       </header>
 
-      <div className="sticky top-[57px] z-40 bg-bgwarm/95 backdrop-blur-md border-b border-text-main/10">
+      <div className="flex-1 flex flex-col min-h-0 sticky top-[57px] z-40 bg-bgwarm/95 backdrop-blur-md border-b border-text-main/10">
         <MyPageTabs
           followedShops={myData.followedShops}
           savedItems={myData.savedItems}

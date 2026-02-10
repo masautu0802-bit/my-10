@@ -201,7 +201,7 @@ export default async function Home() {
         </div>
       </header>
 
-      <main className="flex-1 pb-28">
+      <main className="flex-1 pb-[var(--bottom-nav-safe)]">
         <ShopGrid initialShops={shops} categories={categories} />
       </main>
 

@@ -65,7 +65,7 @@ export default function MyPageTabs({
         ))}
       </div>
 
-      <main className="flex-1 overflow-y-auto pb-24 px-4 pt-4 space-y-4">
+      <main className="flex-1 min-h-0 overflow-y-auto px-4 pt-4 space-y-4 pb-[var(--bottom-nav-safe)]">
         {/* Shops tab */}
         {activeTab === "shops" && (
           followedShops.length === 0 ? (
@@ -136,7 +136,7 @@ export default function MyPageTabs({
                   key={item.id}
                   className="relative bg-white rounded-xl overflow-hidden shadow-soft hover:shadow-soft-hover transition-shadow border border-text-main/5 group"
                 >
-                  <Link href={`/items/${item.id}`}>
+                  <Link href={`/items/${item.id}`} className="block">
                     <div className="aspect-square bg-gray-100 overflow-hidden">
                       {item.image_url ? (
                         <img
@@ -161,9 +161,10 @@ export default function MyPageTabs({
                   <button
                     onClick={(e) => {
                       e.preventDefault();
+                      e.stopPropagation();
                       setKeepModalItemId(item.id);
                     }}
-                    className="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 backdrop-blur-sm shadow-sm hover:bg-white transition-colors"
+                    className="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 backdrop-blur-sm shadow-sm hover:bg-white transition-colors z-10"
                     title="キープフォルダに追加"
                   >
                     <span className="material-symbols-outlined text-[18px] text-text-main/60">
