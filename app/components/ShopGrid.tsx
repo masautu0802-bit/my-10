@@ -396,13 +396,15 @@ export default function ShopGrid({
                 >
                   <div className="w-full h-full rounded-full border-2 border-white overflow-hidden bg-gray-200 shadow-lg relative">
                     {cat.imageUrl ? (
-                      <Image
-                        src={cat.imageUrl}
-                        alt={cat.name}
-                        fill
-                        className="object-cover"
-                        sizes="72px"
-                      />
+                      <div className="absolute inset-0 p-2">
+                        <Image
+                          src={cat.imageUrl}
+                          alt={cat.name}
+                          fill
+                          className="object-contain"
+                          sizes="72px"
+                        />
+                      </div>
                     ) : (
                       <div className="w-full h-full bg-gray-200" />
                     )}

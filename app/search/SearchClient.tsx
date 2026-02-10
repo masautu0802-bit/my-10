@@ -184,7 +184,7 @@ export default function SearchClient() {
           </div>
         ) : totalResults === 0 ? (
           <div className="flex flex-col items-center justify-center gap-4 py-20">
-            <span className="material-symbols-outlined text-[64px] text-text-main/30">
+            <span className="material-symbols-outlined text-[48px] text-text-main/30">
               search_off
             </span>
             <h2 className="text-lg font-bold text-text-main">
