@@ -73,6 +73,12 @@ export default async function ShopCMSPage({
         </div>
         <div className="flex gap-2">
           <Link
+            href={`/cms/shops/${shopId}/edit`}
+            className="flex items-center gap-1.5 text-text-main font-semibold text-sm tracking-wide h-10 px-3 rounded-full bg-surface border border-border-light hover:bg-white active:scale-95 transition-all"
+          >
+            <span className="material-symbols-outlined text-[18px]">edit</span>
+          </Link>
+          <Link
             href={`/cms/shops/${shopId}/settings`}
             className="flex items-center gap-1.5 text-text-main font-semibold text-sm tracking-wide h-10 px-3 rounded-full bg-surface border border-border-light hover:bg-white active:scale-95 transition-all"
           >

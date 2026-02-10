@@ -164,6 +164,58 @@ export async function createShop(formData: {
   return { shopId: shop.id }
 }
 
+export async function updateShop(
+  shopId: string,
+  formData: {
+    name: string
+    description?: string
+    tags?: string[]
+  }
+) {
+  const user = await requireAuth()
+  const supabase = await createClient()
+
+  // Check ownership
+  const { data: shop } = await supabase
+    .from('shops')
+    .select('owner_id')
+    .eq('id', shopId)
+    .single()
+
+  if (!shop || shop.owner_id !== user.id) {
+    return { error: 'このショップを編集する権限がありません' }
+  }
+
+  // Validate tags (max 3)
+  if (formData.tags && formData.tags.length > 3) {
+    return { error: 'タグは最大3つまでです' }
+  }
+
+  // Update shop
+  const { error } = await supabase
+    .from('shops')
+    .update({
+      name: formData.name,
+      description: formData.description || null,
+      tags: formData.tags || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', shopId)
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  // Revalidate all related paths
+  revalidatePath(`/cms/shops/${shopId}`)
+  revalidatePath(`/shops/${shopId}`)
+  revalidatePath('/shop')
+  revalidatePath('/my')
+  revalidatePath('/')
+
+  return { success: true }
+}
+
 export async function deleteShop(shopId: string) {
   const user = await requireAuth()
   const supabase = await createClient()

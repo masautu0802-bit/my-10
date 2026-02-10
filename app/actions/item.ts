@@ -114,6 +114,59 @@ export async function createItem(formData: {
   return { itemId: item.id }
 }
 
+export async function updateItem(
+  itemId: string,
+  formData: {
+    name: string
+    ecUrl?: string
+    imageUrl?: string
+    priceRange?: string
+    comment?: string
+  }
+) {
+  const user = await requireAuth()
+  const supabase = await createClient()
+
+  // アイテムの所属ショップのオーナーシップを確認
+  const { data: item } = await supabase
+    .from('items')
+    .select('shop_id, shops!inner(owner_id)')
+    .eq('id', itemId)
+    .single()
+
+  if (!item) {
+    return { error: 'アイテムが見つかりません' }
+  }
+
+  const shop = item.shops as unknown as { owner_id: string }
+  if (shop.owner_id !== user.id) {
+    return { error: '権限がありません' }
+  }
+
+  // アイテムを更新
+  const { error } = await supabase
+    .from('items')
+    .update({
+      name: formData.name,
+      ec_url: formData.ecUrl || null,
+      image_url: formData.imageUrl || null,
+      price_range: formData.priceRange || null,
+      comment: formData.comment || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', itemId)
+
+  if (error) {
+    console.error('アイテム更新エラー:', error)
+    return { error: 'アイテムの更新に失敗しました' }
+  }
+
+  revalidatePath(`/cms/shops/${item.shop_id}`)
+  revalidatePath(`/shops/${item.shop_id}`)
+  revalidatePath('/')
+  return { success: true }
+}
+
 export async function deleteItem(itemId: string) {
   const user = await requireAuth()
   const supabase = await createClient()

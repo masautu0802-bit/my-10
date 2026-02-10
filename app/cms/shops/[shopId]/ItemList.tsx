@@ -128,6 +128,14 @@ export default function ItemList({
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Link
+              href={`/cms/shops/${shopId}/items/${item.id}/edit`}
+              onClick={(e) => e.stopPropagation()}
+              className="shrink-0 p-2 text-gray-300 hover:text-sage transition-colors rounded-lg hover:bg-sage/10"
+              title="編集"
+            >
+              <span className="material-symbols-outlined text-[20px]">edit</span>
+            </Link>
             <button
               onClick={(e) => handleDeleteClick(item.id, e)}
               className="shrink-0 p-2 text-gray-300 hover:text-coral transition-colors rounded-lg hover:bg-coral/10"
