@@ -133,6 +133,71 @@ export type Database = {
           },
         ]
       }
+      keep_folder_items: {
+        Row: {
+          created_at: string
+          folder_id: string
+          item_id: string
+        }
+        Insert: {
+          created_at?: string
+          folder_id: string
+          item_id: string
+        }
+        Update: {
+          created_at?: string
+          folder_id?: string
+          item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keep_folder_items_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "keep_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "keep_folder_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      keep_folders: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keep_folders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shop_follows: {
         Row: {
           created_at: string

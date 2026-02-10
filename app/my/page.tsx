@@ -69,7 +69,37 @@ async function getMyPageData(userId: string) {
     .map((f) => f.items as unknown as { id: string; name: string; image_url: string; price_range: string | null; shop_id: string })
     .filter(Boolean);
 
-  return { followedShops, savedItems };
+  // Get keep folders with item count and preview thumbnails
+  const { data: folders } = await supabase
+    .from("keep_folders")
+    .select(`
+      id,
+      name,
+      created_at,
+      keep_folder_items (
+        item_id,
+        items (
+          id,
+          image_url
+        )
+      )
+    `)
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false });
+
+  const keepFolders = (folders || []).map((folder) => {
+    const items = (folder.keep_folder_items || [])
+      .map((fi: any) => fi.items)
+      .filter(Boolean);
+    return {
+      id: folder.id,
+      name: folder.name,
+      item_count: items.length,
+      preview_images: items.slice(0, 3).map((item: any) => item.image_url).filter(Boolean) as string[],
+    };
+  });
+
+  return { followedShops, savedItems, keepFolders };
 }
 
 export default async function MyPage() {
@@ -107,6 +137,7 @@ export default async function MyPage() {
         <MyPageTabs
           followedShops={myData.followedShops}
           savedItems={myData.savedItems}
+          keepFolders={myData.keepFolders}
         />
       </div>
 
