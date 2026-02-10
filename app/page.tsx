@@ -145,7 +145,7 @@ async function getShops() {
   for (const id of shopIds) itemsByShop[id] = [];
   allItems?.forEach((item) => {
     const list = itemsByShop[item.shop_id];
-    if (list && list.length < 3) {
+    if (list && list.length < 6) {
       list.push({ id: item.id, name: item.name, image_url: item.image_url });
     }
   });
