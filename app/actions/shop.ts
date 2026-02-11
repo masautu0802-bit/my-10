@@ -8,6 +8,17 @@ export async function toggleShopFollow(shopId: string) {
   const user = await requireAuth()
   const supabase = await createClient()
 
+  // 自分のショップはフォローできない
+  const { data: shop } = await supabase
+    .from('shops')
+    .select('owner_id')
+    .eq('id', shopId)
+    .single()
+
+  if (shop?.owner_id === user.id) {
+    return { error: '自分のショップをフォローすることはできません' }
+  }
+
   const { data: existing } = await supabase
     .from('shop_follows')
     .select('user_id')

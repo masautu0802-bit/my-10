@@ -5,6 +5,7 @@ import BottomNav from "@/app/components/BottomNav";
 import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentUser } from "@/app/lib/auth/session";
 import FollowButton from "./FollowButton";
+import UserFollowButton from "./UserFollowButton";
 import ShopItemsWithPriceUpdate from "./ShopItemsWithPriceUpdate";
 import {
   parseColorTheme,
@@ -50,16 +51,22 @@ async function getShopData(shopId: string) {
   };
 }
 
-async function getFollowState(shopId: string, userId: string | undefined) {
-  if (!userId) return { isFollowing: false, favorites: new Set<string>() };
+async function getFollowState(shopId: string, ownerId: string, userId: string | undefined) {
+  if (!userId) return { isFollowing: false, isFollowingOwner: false, favorites: new Set<string>() };
   const supabase = await createClient();
 
-  const [{ data: follow }, { data: favs }] = await Promise.all([
+  const [{ data: follow }, { data: ownerFollow }, { data: favs }] = await Promise.all([
     supabase
       .from("shop_follows")
       .select("user_id")
       .eq("user_id", userId)
       .eq("shop_id", shopId)
+      .single(),
+    supabase
+      .from("user_follows")
+      .select("follower_id")
+      .eq("follower_id", userId)
+      .eq("followee_id", ownerId)
       .single(),
     supabase
       .from("item_favorites")
@@ -69,6 +76,7 @@ async function getFollowState(shopId: string, userId: string | undefined) {
 
   return {
     isFollowing: !!follow,
+    isFollowingOwner: !!ownerFollow,
     favorites: new Set(favs?.map((f) => f.item_id) || []),
   };
 }
@@ -87,7 +95,7 @@ export default async function ShopDetailPage({
   if (!shopData) notFound();
 
   const { shop, ownerName, ownerAvatarUrl, items, followerCount } = shopData;
-  const { isFollowing, favorites } = await getFollowState(shopId, user?.id);
+  const { isFollowing, isFollowingOwner, favorites } = await getFollowState(shopId, shop.owner_id, user?.id);
   const isOwner = user?.id === shop.owner_id;
 
   // カスタマイズ設定を取得
@@ -281,25 +289,69 @@ export default async function ShopDetailPage({
               />
             </div>
 
-            {/* キュレーター情報 */}
-            <div
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-6"
+            {/* オーナー情報 */}
+            <Link
+              href={`/users/${shop.owner_id}`}
+              className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full mb-4 hover:opacity-80 transition-all group"
               style={{
                 backgroundColor: `${bgSecondary}66`,
                 border: `1px solid ${isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)"}`,
               }}
             >
-              <span
-                className="size-1.5 rounded-full"
-                style={{ backgroundColor: bgQuaternary }}
-              />
-              <p
-                className="text-xs font-medium uppercase tracking-wider"
-                style={{ color: textOnSecondary }}
+              <div
+                className="size-8 rounded-full overflow-hidden border-2"
+                style={{
+                  borderColor: bgQuaternary,
+                  backgroundColor: isDark ? "#555" : "#E0E0E0",
+                }}
               >
-                Curator: {ownerName}
-              </p>
-            </div>
+                {ownerAvatarUrl ? (
+                  <Image
+                    src={ownerAvatarUrl}
+                    alt={ownerName}
+                    width={32}
+                    height={32}
+                    className="size-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="size-full flex items-center justify-center"
+                    style={{
+                      backgroundColor: isDark ? "#555" : "#E0E0E0",
+                    }}
+                  >
+                    <span
+                      className="material-symbols-outlined text-[16px]"
+                      style={{
+                        color: isDark ? "#888" : "#AAA",
+                      }}
+                    >
+                      person
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col items-start">
+                <p
+                  className="text-[10px] font-medium uppercase tracking-wider leading-tight"
+                  style={{ color: textColorSecondary, opacity: 0.7 }}
+                >
+                  Owner
+                </p>
+                <p
+                  className="text-sm font-bold leading-tight"
+                  style={{ color: textColor }}
+                >
+                  {ownerName}
+                </p>
+              </div>
+              <span
+                className="material-symbols-outlined text-[16px] ml-1 group-hover:translate-x-0.5 transition-transform"
+                style={{ color: textColorSecondary }}
+              >
+                chevron_right
+              </span>
+            </Link>
 
             {/* 統計情報 */}
             <div
@@ -342,14 +394,44 @@ export default async function ShopDetailPage({
               </div>
             </div>
 
-            {/* フォローボタン */}
-            <FollowButton
-              shopId={shopId}
-              isFollowing={isFollowing}
-              primaryColor={bgPrimary}
-              quaternaryColor={bgQuaternary}
-              isDark={isDark}
-            />
+            {/* フォローボタンセクション */}
+            <div className="flex flex-col items-center gap-3 w-full max-w-xs mx-auto mb-4">
+              {/* オーナーをフォローするボタン */}
+              {user && (
+                <div className="w-full flex flex-col items-center gap-1.5">
+                  <span
+                    className="text-[10px] font-medium uppercase tracking-wider"
+                    style={{ color: textColorSecondary }}
+                  >
+                    オーナーをフォロー
+                  </span>
+                  <UserFollowButton
+                    userId={shop.owner_id}
+                    isFollowing={isFollowingOwner}
+                    primaryColor={bgPrimary}
+                    tertiaryColor={bgTertiary}
+                    isDark={isDark}
+                  />
+                </div>
+              )}
+
+              {/* 店をフォローするボタン */}
+              <div className="w-full flex flex-col items-center gap-1.5">
+                <span
+                  className="text-[10px] font-medium uppercase tracking-wider"
+                  style={{ color: textColorSecondary }}
+                >
+                  ショップをフォロー
+                </span>
+                <FollowButton
+                  shopId={shopId}
+                  isFollowing={isFollowing}
+                  primaryColor={bgPrimary}
+                  quaternaryColor={bgQuaternary}
+                  isDark={isDark}
+                />
+              </div>
+            </div>
 
             {/* タグ表示 */}
             {shop.tags && shop.tags.length > 0 && (

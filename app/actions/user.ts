@@ -37,5 +37,6 @@ export async function toggleUserFollow(userId: string) {
   revalidatePath(`/users/${userId}`)
   revalidatePath('/my')
   revalidatePath('/my/following/users')
+  revalidatePath('/shops')
   revalidatePath('/')
 }
