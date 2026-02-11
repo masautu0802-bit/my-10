@@ -37,10 +37,19 @@ export default function UserFollowButton({
     border: `2px solid ${tertiaryColor}`,
   };
 
+  const handleClick = () => {
+    startTransition(async () => {
+      const result = await toggleUserFollow(userId);
+      if (result?.error) {
+        alert(result.error);
+      }
+    });
+  };
+
   return (
     <button
       disabled={isPending}
-      onClick={() => startTransition(() => toggleUserFollow(userId))}
+      onClick={handleClick}
       className="w-full max-w-[200px] font-medium text-sm py-2.5 px-5 rounded-full shadow-soft hover:opacity-80 active:translate-y-[1px] transition-all flex items-center justify-center gap-2 disabled:opacity-60"
       style={isFollowing ? followedStyle : notFollowedStyle}
     >

@@ -37,10 +37,19 @@ export default function FollowButton({
     border: `2px solid ${quaternaryColor}`,
   };
 
+  const handleClick = () => {
+    startTransition(async () => {
+      const result = await toggleShopFollow(shopId);
+      if (result?.error) {
+        alert(result.error);
+      }
+    });
+  };
+
   return (
     <button
       disabled={isPending}
-      onClick={() => startTransition(() => toggleShopFollow(shopId))}
+      onClick={handleClick}
       className="w-full max-w-[200px] font-medium text-base py-3 px-6 rounded-full shadow-soft hover:opacity-80 active:translate-y-[1px] transition-all mb-8 flex items-center justify-center gap-2 disabled:opacity-60"
       style={isFollowing ? followedStyle : notFollowedStyle}
     >
