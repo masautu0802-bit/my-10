@@ -51,11 +51,11 @@ async function getShopData(shopId: string) {
   };
 }
 
-async function getFollowState(shopId: string, ownerId: string, userId: string | undefined) {
+async function getFollowState(shopId: string, ownerId: string | null | undefined, userId: string | undefined) {
   if (!userId) return { isFollowing: false, isFollowingOwner: false, favorites: new Set<string>() };
   const supabase = await createClient();
 
-  const [{ data: follow }, { data: ownerFollow }, { data: favs }] = await Promise.all([
+  const [{ data: follow }, { data: favs }] = await Promise.all([
     supabase
       .from("shop_follows")
       .select("user_id")
@@ -63,16 +63,22 @@ async function getFollowState(shopId: string, ownerId: string, userId: string | 
       .eq("shop_id", shopId)
       .single(),
     supabase
-      .from("user_follows")
-      .select("follower_id")
-      .eq("follower_id", userId)
-      .eq("followee_id", ownerId)
-      .single(),
-    supabase
       .from("item_favorites")
       .select("item_id")
       .eq("user_id", userId),
   ]);
+
+  // オーナーフォロー状態を別途取得（ownerIdがある場合のみ）
+  let ownerFollow = null;
+  if (ownerId) {
+    const result = await supabase
+      .from("user_follows")
+      .select("follower_id")
+      .eq("follower_id", userId)
+      .eq("followee_id", ownerId)
+      .single();
+    ownerFollow = result.data;
+  }
 
   return {
     isFollowing: !!follow,
@@ -290,14 +296,15 @@ export default async function ShopDetailPage({
             </div>
 
             {/* オーナー情報 */}
-            <Link
-              href={`/users/${shop.owner_id}`}
-              className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full mb-4 hover:opacity-80 transition-all group"
-              style={{
-                backgroundColor: `${bgSecondary}66`,
-                border: `1px solid ${isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)"}`,
-              }}
-            >
+            {shop.owner_id && (
+              <Link
+                href={`/users/${shop.owner_id}`}
+                className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full mb-4 hover:opacity-80 transition-all group"
+                style={{
+                  backgroundColor: `${bgSecondary}66`,
+                  border: `1px solid ${isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)"}`,
+                }}
+              >
               <div
                 className="size-8 rounded-full overflow-hidden border-2"
                 style={{
@@ -352,6 +359,7 @@ export default async function ShopDetailPage({
                 chevron_right
               </span>
             </Link>
+            )}
 
             {/* 統計情報 */}
             <div
@@ -397,7 +405,7 @@ export default async function ShopDetailPage({
             {/* フォローボタンセクション */}
             <div className="flex flex-col items-center gap-3 w-full max-w-xs mx-auto mb-4">
               {/* オーナーをフォローするボタン */}
-              {user && (
+              {user && shop.owner_id && (
                 <div className="w-full flex flex-col items-center gap-1.5">
                   <span
                     className="text-[10px] font-medium uppercase tracking-wider"
