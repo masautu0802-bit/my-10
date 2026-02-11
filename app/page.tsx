@@ -86,7 +86,6 @@ async function getTopTags(): Promise<TagCategory[]> {
       return {
         name: tag,
         gradient: gradients[index % gradients.length],
-        badge: index === 0 ? "Hot" : undefined,
       };
     }
 
@@ -98,7 +97,6 @@ async function getTopTags(): Promise<TagCategory[]> {
     return {
       name: tag,
       gradient: gradients[index % gradients.length],
-      badge: index === 0 ? "Hot" : undefined,
       imageUrl: firstItemImageMap[topShopId] || undefined,
     };
   });
