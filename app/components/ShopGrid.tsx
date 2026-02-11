@@ -396,7 +396,7 @@ export default function ShopGrid({
                 >
                   <div className="w-full h-full rounded-full border-2 border-white overflow-hidden bg-gray-200 shadow-lg relative">
                     {cat.imageUrl ? (
-                      <div className="absolute inset-0 p-2">
+                      <div className="absolute inset-0 p-0.5">
                         <Image
                           src={cat.imageUrl}
                           alt={cat.name}
