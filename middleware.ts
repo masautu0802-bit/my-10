@@ -4,6 +4,11 @@ import { createServerClient } from '@supabase/ssr'
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
+  // Skip middleware for auth callback - PKCE code_verifier must not be cleared
+  if (pathname === '/auth/callback') {
+    return NextResponse.next({ request })
+  }
+
   // Only run auth check for protected routes (/my, /cms) and auth routes (/auth)
   const isProtectedRoute = pathname.startsWith('/my') || pathname.startsWith('/cms')
   const isAuthRoute = pathname.startsWith('/auth')
