@@ -3,12 +3,14 @@
  *
  * L1: インメモリキャッシュ（サーバーリクエスト内）
  * L2: PostgreSQLテーブルキャッシュ（12時間TTL）
+ *     ※ recommendation_cache テーブルが未作成の場合はL1のみで動作
  * L3: 将来的にRedis追加可能
  *
  * 設計書: Docs/recommendation-system-design.md Section 5.2, 9.3
  */
 
 import { createClient } from '@/app/lib/supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { RecommendedItem, CacheOptions } from './types'
 
 // ========================================
@@ -54,6 +56,20 @@ function setToMemoryCache(userId: string, items: RecommendedItem[]): void {
 }
 
 // ========================================
+// DB操作ヘルパー
+// recommendation_cache テーブルは型定義(database.types.ts)に
+// 含まれていないため、型をバイパスして操作する
+// テーブル作成後に型定義を再生成すれば直接操作可能になる
+// ========================================
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function fromCacheTable(supabase: SupabaseClient<any>) {
+  // 型定義にないテーブルを操作するため any にキャスト
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (supabase as any).from('recommendation_cache')
+}
+
+// ========================================
 // DBキャッシュ（L2）
 // ========================================
 
@@ -76,8 +92,7 @@ export async function getCachedRecommendations(
   // L2: DBキャッシュチェック
   try {
     const supabase = await createClient()
-    const { data } = await supabase
-      .from('recommendation_cache')
+    const { data } = await fromCacheTable(supabase)
       .select('recommended_item_ids, scores, expires_at')
       .eq('user_id', userId)
       .single()
@@ -87,8 +102,7 @@ export async function getCachedRecommendations(
     const expiresAt = new Date(data.expires_at)
     if (expiresAt <= new Date()) {
       // 期限切れ → 削除
-      await supabase
-        .from('recommendation_cache')
+      await fromCacheTable(supabase)
         .delete()
         .eq('user_id', userId)
       return null
@@ -129,11 +143,11 @@ export async function cacheRecommendations(
 
     const itemIds = items.map((i) => i.itemId)
 
-    await supabase.from('recommendation_cache').upsert(
+    await fromCacheTable(supabase).upsert(
       {
         user_id: userId,
         recommended_item_ids: itemIds,
-        scores: items as unknown as Record<string, unknown>[],
+        scores: items,
         generated_at: new Date().toISOString(),
         expires_at: expiresAt.toISOString(),
         version: 1,
@@ -160,12 +174,10 @@ export async function invalidateRecommendationCache(
   // L2: DBキャッシュ削除
   try {
     const supabase = await createClient()
-    await supabase
-      .from('recommendation_cache')
+    await fromCacheTable(supabase)
       .delete()
       .eq('user_id', userId)
   } catch {
     // テーブルが存在しない場合は無視
   }
 }
-
