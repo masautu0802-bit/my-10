@@ -25,13 +25,13 @@ const gradients = [
   "from-orange-300 to-red-400",
 ];
 
-async function getTopTags(): Promise<TagCategory[]> {
+async function getTopTags(userId: string | null): Promise<TagCategory[]> {
   const supabase = await createClient();
 
   // Get all shops with tags
   const { data: shops } = await supabase
     .from("shops")
-    .select("id, tags")
+    .select("id, tags, owner_id")
     .not("tags", "is", null);
 
   if (!shops || shops.length === 0) return [];
@@ -39,7 +39,9 @@ async function getTopTags(): Promise<TagCategory[]> {
   // Count tag occurrences and build tag->shopIds mapping
   const tagCounts: Record<string, number> = {};
   const tagShopIds: Record<string, string[]> = {};
+  const shopOwnerMap: Record<string, string> = {};
   shops.forEach((shop) => {
+    shopOwnerMap[shop.id] = shop.owner_id;
     shop.tags?.forEach((tag: string) => {
       tagCounts[tag] = (tagCounts[tag] || 0) + 1;
       if (!tagShopIds[tag]) tagShopIds[tag] = [];
@@ -47,23 +49,20 @@ async function getTopTags(): Promise<TagCategory[]> {
     });
   });
 
-  // Sort by count and get top tags
-  const topTags = Object.entries(tagCounts)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 8)
-    .map(([tag]) => tag);
-
-  if (topTags.length === 0) return [];
+  const allTags = Object.keys(tagCounts);
+  if (allTags.length === 0) return [];
 
   // Collect all relevant shop IDs
-  const allShopIds = [...new Set(topTags.flatMap((tag) => tagShopIds[tag] || []))];
+  const allShopIds = [...new Set(shops.map((s) => s.id))];
 
-  if (allShopIds.length === 0) return [];
-
-  // Batch: get all follows and items in 2 queries
+  // 基本データ取得（フォロワー数 + アイテム画像）
   const [{ data: allFollows }, { data: allItems }] = await Promise.all([
     supabase.from("shop_follows").select("shop_id").in("shop_id", allShopIds),
-    supabase.from("items").select("shop_id, image_url, order_index").in("shop_id", allShopIds).order("order_index", { ascending: true }),
+    supabase
+      .from("items")
+      .select("shop_id, image_url, order_index")
+      .in("shop_id", allShopIds)
+      .order("order_index", { ascending: true }),
   ]);
 
   // Build follower count map
@@ -79,6 +78,88 @@ async function getTopTags(): Promise<TagCategory[]> {
       firstItemImageMap[item.shop_id] = item.image_url;
     }
   });
+
+  // ========================================
+  // パーソナライズスコア計算
+  // ========================================
+  const tagScores: Record<string, number> = {};
+
+  // 基本スコア: タグの出現回数（人気度）
+  for (const tag of allTags) {
+    tagScores[tag] = tagCounts[tag] * 1; // 出現回数 × 1
+  }
+
+  // ログインユーザーの場合、行動データからタグスコアをブースト
+  if (userId) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let userFavItemShopIds: string[] = [];
+    let userFollowedShopIds: string[] = [];
+    let userFollowedUserIds: string[] = [];
+
+    const [followedShopsRes, followedUsersRes, favoritesRes] =
+      await Promise.all([
+        supabase.from("shop_follows").select("shop_id").eq("user_id", userId),
+        supabase
+          .from("user_follows")
+          .select("followee_id")
+          .eq("follower_id", userId),
+        supabase
+          .from("item_favorites")
+          .select("item_id, items!inner(shop_id)")
+          .eq("user_id", userId)
+          .limit(200),
+      ]);
+
+    userFollowedShopIds =
+      followedShopsRes.data?.map((f) => f.shop_id) || [];
+    userFollowedUserIds =
+      followedUsersRes.data?.map((f) => f.followee_id) || [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    userFavItemShopIds = (favoritesRes.data || []).map(
+      (f: { items: { shop_id: string } }) => f.items?.shop_id
+    ).filter(Boolean);
+
+    const followedShopSet = new Set(userFollowedShopIds);
+    const followedUserSet = new Set(userFollowedUserIds);
+    const favShopSet = new Set(userFavItemShopIds);
+
+    // 各タグに対してパーソナライズスコアを加算
+    for (const tag of allTags) {
+      const shopIds = tagShopIds[tag] || [];
+
+      for (const shopId of shopIds) {
+        // フォロー中ショップのタグ → +15
+        if (followedShopSet.has(shopId)) {
+          tagScores[tag] = (tagScores[tag] || 0) + 15;
+        }
+
+        // フォロー中ユーザーのショップのタグ → +8
+        if (followedUserSet.has(shopOwnerMap[shopId])) {
+          tagScores[tag] = (tagScores[tag] || 0) + 8;
+        }
+
+        // お気に入りアイテムがあるショップのタグ → +10
+        if (favShopSet.has(shopId)) {
+          tagScores[tag] = (tagScores[tag] || 0) + 10;
+        }
+      }
+
+      // フォロワー数が多いショップを持つタグにボーナス
+      const maxFollowers = Math.max(
+        ...shopIds.map((id) => followerCountMap[id] || 0),
+        0
+      );
+      tagScores[tag] = (tagScores[tag] || 0) + Math.min(maxFollowers, 5);
+    }
+  }
+
+  // スコア順でソートし、上位8タグを選択
+  const topTags = Object.entries(tagScores)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 8)
+    .map(([tag]) => tag);
+
+  if (topTags.length === 0) return [];
 
   // Compute tag categories in JS
   return topTags.map((tag, index) => {
@@ -249,7 +330,7 @@ export default async function Home() {
 
   const [shops, categories] = await Promise.all([
     getShops(user?.id || null),
-    getTopTags(),
+    getTopTags(user?.id || null),
   ]);
 
   // レコメンドを非同期で取得（エラーでもページは表示される）
