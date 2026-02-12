@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { signUp, signInWithGoogle } from "@/app/actions/auth";
+import { signUp } from "@/app/actions/auth";
+import { signInWithGoogleClient } from "@/app/lib/auth/google-signin-client";
 import BackButton from "@/app/components/BackButton";
 
 export default function SignUpPage() {
@@ -45,8 +46,7 @@ export default function SignUpPage() {
 
   const handleGoogleSignIn = () => {
     startTransition(async () => {
-      const origin = window.location.origin;
-      const result = await signInWithGoogle(origin);
+      const result = await signInWithGoogleClient();
       if (result.error) {
         setError(result.error);
       } else if (result.url) {

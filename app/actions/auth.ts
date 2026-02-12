@@ -76,23 +76,3 @@ export async function signOut(): Promise<AuthResult> {
   redirect('/')
 }
 
-export async function signInWithGoogle(origin: string): Promise<{ url?: string; error?: string }> {
-  const supabase = await createClient()
-
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${origin}/auth/callback`,
-    },
-  })
-
-  if (error) {
-    return { error: error.message }
-  }
-
-  if (data.url) {
-    return { url: data.url }
-  }
-
-  return { error: '認証URLの取得に失敗しました' }
-}

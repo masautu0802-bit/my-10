@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState, useTransition, useEffect } from "react";
-import { signIn, signInWithGoogle } from "@/app/actions/auth";
+import { signIn } from "@/app/actions/auth";
+import { signInWithGoogleClient } from "@/app/lib/auth/google-signin-client";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -43,8 +44,7 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = () => {
     startTransition(async () => {
-      const origin = window.location.origin;
-      const result = await signInWithGoogle(origin);
+      const result = await signInWithGoogleClient();
       if (result.error) {
         setError(result.error);
       } else if (result.url) {
