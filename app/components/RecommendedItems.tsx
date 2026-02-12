@@ -11,10 +11,7 @@ interface RecommendedItemsProps {
 
 function RecommendedItemCard({ item }: { item: RecommendedItem }) {
   return (
-    <Link
-      href={`/items/${item.itemId}`}
-      className="group block"
-    >
+    <Link href={`/items/${item.itemId}`} className="group block">
       <div className="relative rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-lg transition-all duration-300">
         {/* 画像エリア */}
         <div className="aspect-[3/4] relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
@@ -26,10 +23,9 @@ function RecommendedItemCard({ item }: { item: RecommendedItem }) {
                   alt={item.name}
                   fill
                   className="object-contain transition-transform duration-500 group-hover:scale-105"
-                  sizes="(max-width: 768px) 45vw, 200px"
+                  sizes="(max-width: 768px) 42vw, 180px"
                 />
               </div>
-              {/* フェードエフェクト */}
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-gray-50/30 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-gray-100/30 to-transparent" />
@@ -54,8 +50,8 @@ function RecommendedItemCard({ item }: { item: RecommendedItem }) {
         </div>
 
         {/* テキストエリア */}
-        <div className="p-3">
-          <h4 className="text-xs font-bold text-[#2a2a2a] mb-1 line-clamp-2 leading-tight">
+        <div className="p-2.5">
+          <h4 className="text-[11px] font-bold text-[#2a2a2a] mb-0.5 line-clamp-2 leading-tight">
             {item.name}
           </h4>
           <p className="text-[10px] text-[#2a2a2a]/50 truncate">
@@ -75,9 +71,9 @@ export default function RecommendedItems({ items }: RecommendedItemsProps) {
   const displayItems = showAll ? items : items.slice(0, 8);
 
   return (
-    <section className="mt-6 px-3 pb-4">
+    <section className="pt-8 pb-4">
       {/* セクションヘッダー */}
-      <div className="mb-4 px-1">
+      <div className="mb-5 px-1">
         <div className="flex items-center gap-2">
           <div className="p-1.5 bg-coral/20 rounded-lg text-coral">
             <span className="material-symbols-outlined text-[18px]">
@@ -96,7 +92,7 @@ export default function RecommendedItems({ items }: RecommendedItemsProps) {
       {/* アイテムグリッド - Pinterest風2カラム */}
       <div className="flex gap-2.5">
         {/* 左カラム */}
-        <div className="flex-1 flex flex-col gap-3">
+        <div className="flex-1 min-w-0 flex flex-col gap-2.5">
           {displayItems
             .filter((_, i) => i % 2 === 0)
             .map((item) => (
@@ -105,7 +101,7 @@ export default function RecommendedItems({ items }: RecommendedItemsProps) {
         </div>
 
         {/* 右カラム - 少し下げてPinterest風 */}
-        <div className="flex-1 flex flex-col gap-3 pt-8">
+        <div className="flex-1 min-w-0 flex flex-col gap-2.5 pt-10">
           {displayItems
             .filter((_, i) => i % 2 !== 0)
             .map((item) => (
@@ -131,4 +127,3 @@ export default function RecommendedItems({ items }: RecommendedItemsProps) {
     </section>
   );
 }
-

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import BottomNav from "@/app/components/BottomNav";
 import ShopGrid from "@/app/components/ShopGrid";
-import RecommendedItems from "@/app/components/RecommendedItems";
 import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentUser } from "@/app/lib/auth/session";
 import { generateRecommendations } from "@/app/lib/recommendation";
@@ -104,7 +103,7 @@ async function getTopTags(): Promise<TagCategory[]> {
   });
 }
 
-async function getShops() {
+async function getShops(userId: string | null) {
   const supabase = await createClient();
 
   const { data: shops } = await supabase
@@ -118,30 +117,63 @@ async function getShops() {
       users!shops_owner_id_fkey ( name )
     `)
     .order("created_at", { ascending: false })
-    .limit(20);
+    .limit(30);
 
   if (!shops) return [];
 
   const shopIds = shops.map((s) => s.id);
 
-  // Get follower counts
-  const { data: followCounts } = await supabase
-    .from("shop_follows")
-    .select("shop_id")
-    .in("shop_id", shopIds);
+  // パーソナライズ用のデータを並列取得（基本データ）
+  const [{ data: followCounts }, { data: allItems }] = await Promise.all([
+    supabase.from("shop_follows").select("shop_id").in("shop_id", shopIds),
+    supabase
+      .from("items")
+      .select("id, name, image_url, shop_id, order_index")
+      .in("shop_id", shopIds)
+      .order("order_index", { ascending: true }),
+  ]);
 
+  // ログインユーザーの場合、パーソナライズ用データも並列取得
+  let userFollowedShopsData: { shop_id: string }[] | null = null;
+  let userFollowedUsersData: { followee_id: string }[] | null = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let userFavoritesData: any[] | null = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let userKeepsData: any[] | null = null;
+
+  if (userId) {
+    const [followedShopsRes, followedUsersRes, favoritesRes, keepsRes] =
+      await Promise.all([
+        supabase.from("shop_follows").select("shop_id").eq("user_id", userId),
+        supabase
+          .from("user_follows")
+          .select("followee_id")
+          .eq("follower_id", userId),
+        supabase
+          .from("item_favorites")
+          .select("item_id, items!inner(shop_id)")
+          .eq("user_id", userId)
+          .limit(100),
+        supabase
+          .from("keep_folder_items")
+          .select("item_id, items!inner(shop_id), keep_folders!inner(user_id)")
+          .eq("keep_folders.user_id", userId)
+          .limit(100),
+      ]);
+
+    userFollowedShopsData = followedShopsRes.data;
+    userFollowedUsersData = followedUsersRes.data;
+    userFavoritesData = favoritesRes.data;
+    userKeepsData = keepsRes.data;
+  }
+
+  // フォロワー数マップ
   const countMap: Record<string, number> = {};
   followCounts?.forEach((f) => {
     countMap[f.shop_id] = (countMap[f.shop_id] || 0) + 1;
   });
 
-  // Get items for all shops (first 3 per shop by order_index)
-  const { data: allItems } = await supabase
-    .from("items")
-    .select("id, name, image_url, shop_id, order_index")
-    .in("shop_id", shopIds)
-    .order("order_index", { ascending: true });
-
+  // アイテムマップ（ショップ別）
   const itemsByShop: Record<string, ShopItem[]> = {};
   for (const id of shopIds) itemsByShop[id] = [];
   allItems?.forEach((item) => {
@@ -151,21 +183,74 @@ async function getShops() {
     }
   });
 
-  const shopsWithCounts = shops.map((shop) => ({
-    id: shop.id,
-    name: shop.name,
-    ownerName: (shop.users as unknown as { name: string })?.name || "不明",
-    theme: shop.theme,
-    followers: countMap[shop.id] || 0,
-    items: itemsByShop[shop.id] || [],
-    tags: shop.tags,
-  }));
+  // パーソナライズスコア計算
+  const followedShopIds = new Set<string>();
+  const followedUserIds = new Set<string>();
+  const favoriteShopIds = new Set<string>();
 
-  return shopsWithCounts.sort((a, b) => b.followers - a.followers);
+  if (userId) {
+    userFollowedShopsData?.forEach((f) => followedShopIds.add(f.shop_id));
+    userFollowedUsersData?.forEach((f) => followedUserIds.add(f.followee_id));
+    userFavoritesData?.forEach((f: { items: { shop_id: string } }) => {
+      if (f.items?.shop_id) favoriteShopIds.add(f.items.shop_id);
+    });
+    userKeepsData?.forEach((k: { items: { shop_id: string } }) => {
+      if (k.items?.shop_id) favoriteShopIds.add(k.items.shop_id);
+    });
+  }
+
+  const shopsWithCounts = shops.map((shop) => {
+    // パーソナライズスコア計算
+    let relevanceScore = 0;
+
+    // フォロー中のショップ → 最優先（+100）
+    if (followedShopIds.has(shop.id)) {
+      relevanceScore += 100;
+    }
+
+    // フォロー中ユーザーのショップ → 高優先（+50）
+    if (followedUserIds.has(shop.owner_id)) {
+      relevanceScore += 50;
+    }
+
+    // お気に入り/キープしたアイテムがあるショップ → 中優先（+30）
+    if (favoriteShopIds.has(shop.id)) {
+      relevanceScore += 30;
+    }
+
+    // フォロワー数による人気度ボーナス（最大+20）
+    const followers = countMap[shop.id] || 0;
+    relevanceScore += Math.min(followers * 2, 20);
+
+    return {
+      id: shop.id,
+      name: shop.name,
+      ownerName: (shop.users as unknown as { name: string })?.name || "不明",
+      theme: shop.theme,
+      followers,
+      items: itemsByShop[shop.id] || [],
+      tags: shop.tags,
+      isFollowed: followedShopIds.has(shop.id),
+      relevanceScore,
+    };
+  });
+
+  // パーソナライズスコア → フォロワー数でソート
+  return shopsWithCounts.sort((a, b) => {
+    if (a.relevanceScore !== b.relevanceScore) {
+      return b.relevanceScore - a.relevanceScore;
+    }
+    return b.followers - a.followers;
+  });
 }
 
 export default async function Home() {
-  const [shops, categories, user] = await Promise.all([getShops(), getTopTags(), getCurrentUser()]);
+  const user = await getCurrentUser();
+
+  const [shops, categories] = await Promise.all([
+    getShops(user?.id || null),
+    getTopTags(),
+  ]);
 
   // レコメンドを非同期で取得（エラーでもページは表示される）
   let recommendations: Awaited<ReturnType<typeof generateRecommendations>> = [];
@@ -175,70 +260,67 @@ export default async function Home() {
       useCache: true,
     });
   } catch (error) {
-    console.error('Failed to load recommendations:', error);
+    console.error("Failed to load recommendations:", error);
   }
 
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-[#E5E7EB] shadow-2xl">
       <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-bgwarm">
-      {/* Header - ブティックストリート風 */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-lg px-6 py-5 border-b border-sage/10 flex items-center justify-between shadow-sm">
-        <div>
-          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] font-black mb-1 text-sage/60">
-            <span className="material-symbols-outlined text-[10px]">
-              location_on
-            </span>
-            <span>Your Shopping Street</span>
+        {/* Header - ブティックストリート風 */}
+        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-lg px-6 py-5 border-b border-sage/10 flex items-center justify-between shadow-sm">
+          <div>
+            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] font-black mb-1 text-sage/60">
+              <span className="material-symbols-outlined text-[10px]">
+                location_on
+              </span>
+              <span>Your Shopping Street</span>
+            </div>
+            <h1 className="text-2xl font-serif font-bold tracking-tight flex items-center gap-3 text-[#2a2a2a]">
+              My10
+              <span className="h-1 w-8 rounded-full bg-coral/30 mt-1"></span>
+            </h1>
           </div>
-          <h1 className="text-2xl font-serif font-bold tracking-tight flex items-center gap-3 text-[#2a2a2a]">
-            My10
-            <span className="h-1 w-8 rounded-full bg-coral/30 mt-1"></span>
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/search"
-            className="p-3 rounded-2xl bg-gray-50 border border-gray-100 transition-all hover:shadow-md active:scale-95 text-[#2a2a2a]"
-          >
-            <span className="material-symbols-outlined text-[20px]">
-              search
-            </span>
-          </Link>
-          {user ? (
+          <div className="flex items-center gap-2">
             <Link
-              href="/my"
+              href="/search"
               className="p-3 rounded-2xl bg-gray-50 border border-gray-100 transition-all hover:shadow-md active:scale-95 text-[#2a2a2a]"
             >
               <span className="material-symbols-outlined text-[20px]">
-                person
+                search
               </span>
             </Link>
-          ) : (
-            <Link
-              href="/auth/login"
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-sage text-white text-sm font-bold transition-all hover:bg-sage/90 active:scale-95"
-            >
-              <span className="material-symbols-outlined text-[18px]">
-                login
-              </span>
-              <span>ログイン</span>
-            </Link>
-          )}
-        </div>
-      </header>
-
-      <main className="flex-1 pb-[var(--bottom-nav-safe)]">
-        <ShopGrid initialShops={shops} categories={categories} />
-
-        {/* レコメンドセクション */}
-        {recommendations.length > 0 && (
-          <div className="bg-[#FBF5ED]">
-            <RecommendedItems items={recommendations} />
+            {user ? (
+              <Link
+                href="/my"
+                className="p-3 rounded-2xl bg-gray-50 border border-gray-100 transition-all hover:shadow-md active:scale-95 text-[#2a2a2a]"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  person
+                </span>
+              </Link>
+            ) : (
+              <Link
+                href="/auth/login"
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-sage text-white text-sm font-bold transition-all hover:bg-sage/90 active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  login
+                </span>
+                <span>ログイン</span>
+              </Link>
+            )}
           </div>
-        )}
-      </main>
+        </header>
 
-      <BottomNav />
+        <main className="flex-1 pb-[var(--bottom-nav-safe)]">
+          <ShopGrid
+            initialShops={shops}
+            categories={categories}
+            recommendedItems={recommendations}
+          />
+        </main>
+
+        <BottomNav />
       </div>
     </div>
   );

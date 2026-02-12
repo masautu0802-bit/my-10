@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import RecommendedItems from "./RecommendedItems";
+import type { RecommendedItem } from "@/app/lib/recommendation";
 
 type ShopItem = { id: string; name: string; image_url: string | null };
 
@@ -14,6 +16,8 @@ type Shop = {
   followers: number;
   items: ShopItem[];
   tags?: string[] | null;
+  isFollowed?: boolean;
+  relevanceScore?: number;
 };
 
 type TagCategory = {
@@ -22,11 +26,6 @@ type TagCategory = {
   badge?: string;
   imageUrl?: string;
 };
-
-function truncateLabel(text: string, maxLen = 12): string {
-  if (text.length <= maxLen) return text;
-  return text.slice(0, maxLen - 3) + "---";
-}
 
 function ShopCard({ shop }: { shop: Shop }) {
   const [isFlipped, setIsFlipped] = useState(false);
@@ -57,7 +56,6 @@ function ShopCard({ shop }: { shop: Shop }) {
     const handleScroll = () => {
       if (!cardRef.current) return;
 
-      const rect = cardRef.current.getBoundingClientRect();
       const currentY = window.scrollY;
 
       // 初回スクロール位置を記録
@@ -75,10 +73,10 @@ function ShopCard({ shop }: { shop: Shop }) {
     };
 
     scrollStartYRef.current = window.scrollY;
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener("scroll", handleScroll);
       scrollStartYRef.current = 0;
     };
   }, [isFlipped]);
@@ -102,6 +100,101 @@ function ShopCard({ shop }: { shop: Shop }) {
       }, 300);
     }
   }, [hasBackItems, router, shop.id]);
+
+  const renderImageGrid = (
+    main: ShopItem | undefined,
+    side1: ShopItem | undefined,
+    side2: ShopItem | undefined
+  ) => (
+    <div className="px-2 pb-2">
+      <div className="relative w-full overflow-hidden rounded-2xl">
+        {/* ガラスフレームエフェクト */}
+        <div className="absolute inset-0 border-[8px] border-white/20 z-20 pointer-events-none rounded-2xl"></div>
+        <div className="absolute inset-0 border border-white/10 z-20 pointer-events-none rounded-2xl"></div>
+
+        {/* 画像グリッド */}
+        <div className="grid grid-cols-3 gap-1 aspect-[3/4]">
+          {/* メイン画像 */}
+          <div className="col-span-2 relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+            {main?.image_url ? (
+              <>
+                <div className="absolute inset-0 p-2">
+                  <Image
+                    src={main.image_url}
+                    alt={main.name}
+                    fill
+                    className="object-contain"
+                    sizes="(max-width: 768px) 45vw, 300px"
+                  />
+                </div>
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-gray-50/40 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-gray-100/40 to-transparent" />
+                  <div className="absolute top-0 bottom-0 left-0 w-6 bg-gradient-to-r from-gray-50/30 to-transparent" />
+                  <div className="absolute top-0 bottom-0 right-0 w-6 bg-gradient-to-l from-gray-50/30 to-transparent" />
+                </div>
+              </>
+            ) : (
+              <div className="w-full h-full bg-gray-200" />
+            )}
+          </div>
+
+          {/* サイド画像カラム */}
+          <div className="col-span-1 grid grid-rows-2 gap-1">
+            <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+              {side1?.image_url ? (
+                <>
+                  <div className="absolute inset-0 p-1.5">
+                    <Image
+                      src={side1.image_url}
+                      alt={side1.name}
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 768px) 22vw, 150px"
+                    />
+                  </div>
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-gray-50/40 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-gray-100/40 to-transparent" />
+                    <div className="absolute top-0 bottom-0 left-0 w-3 bg-gradient-to-r from-gray-50/30 to-transparent" />
+                    <div className="absolute top-0 bottom-0 right-0 w-3 bg-gradient-to-l from-gray-50/30 to-transparent" />
+                  </div>
+                </>
+              ) : (
+                <div className="w-full h-full bg-gray-200" />
+              )}
+            </div>
+            <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+              {side2?.image_url ? (
+                <>
+                  <div className="absolute inset-0 p-1.5">
+                    <Image
+                      src={side2.image_url}
+                      alt={side2?.name ?? ""}
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 768px) 22vw, 150px"
+                    />
+                  </div>
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-gray-50/40 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-gray-100/40 to-transparent" />
+                    <div className="absolute top-0 bottom-0 left-0 w-3 bg-gradient-to-r from-gray-50/30 to-transparent" />
+                    <div className="absolute top-0 bottom-0 right-0 w-3 bg-gradient-to-l from-gray-50/30 to-transparent" />
+                  </div>
+                </>
+              ) : (
+                <div className="w-full h-full bg-gray-200" />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ガラス反射オーバーレイ */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-white/10 opacity-30 mix-blend-overlay z-10 pointer-events-none"></div>
+      </div>
+    </div>
+  );
 
   return (
     <div
@@ -128,102 +221,19 @@ function ShopCard({ shop }: { shop: Shop }) {
             backfaceVisibility: "hidden",
           }}
         >
-          {/* ショップ名 */}
-          <div className="px-4 py-3 bg-white/50 backdrop-blur-md">
-            <h4 className="font-serif font-bold text-base tracking-tight text-[#2a2a2a] truncate">
+          {/* ショップ名 + フォロー中バッジ */}
+          <div className="px-4 py-3 bg-white/50 backdrop-blur-md flex items-center gap-2">
+            <h4 className="font-serif font-bold text-base tracking-tight text-[#2a2a2a] truncate flex-1">
               {shop.name}
             </h4>
+            {shop.isFollowed && (
+              <span className="shrink-0 text-[8px] font-bold text-sage bg-sage/10 px-1.5 py-0.5 rounded-full">
+                フォロー中
+              </span>
+            )}
           </div>
 
-          {/* トリプティック画像レイアウト */}
-          <div className="px-2 pb-2">
-            <div className="relative w-full overflow-hidden rounded-2xl">
-              {/* ガラスフレームエフェクト */}
-              <div className="absolute inset-0 border-[8px] border-white/20 z-20 pointer-events-none rounded-2xl"></div>
-              <div className="absolute inset-0 border border-white/10 z-20 pointer-events-none rounded-2xl"></div>
-
-              {/* 画像グリッド */}
-              <div className="grid grid-cols-3 gap-1 aspect-[3/4]">
-                {/* メイン画像 */}
-                <div className="col-span-2 relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-                  {mainItem?.image_url ? (
-                    <>
-                      <div className="absolute inset-0 p-2">
-                        <Image
-                          src={mainItem.image_url}
-                          alt={mainItem.name}
-                          fill
-                          className="object-contain"
-                          sizes="(max-width: 768px) 45vw, 300px"
-                        />
-                      </div>
-                      <div className="absolute inset-0 pointer-events-none">
-                        <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-gray-50/40 to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-gray-100/40 to-transparent" />
-                        <div className="absolute top-0 bottom-0 left-0 w-6 bg-gradient-to-r from-gray-50/30 to-transparent" />
-                        <div className="absolute top-0 bottom-0 right-0 w-6 bg-gradient-to-l from-gray-50/30 to-transparent" />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="w-full h-full bg-gray-200" />
-                  )}
-                </div>
-
-                {/* サイド画像カラム */}
-                <div className="col-span-1 grid grid-rows-2 gap-1">
-                  <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-                    {sub1?.image_url ? (
-                      <>
-                        <div className="absolute inset-0 p-1.5">
-                          <Image
-                            src={sub1.image_url}
-                            alt={sub1.name}
-                            fill
-                            className="object-contain"
-                            sizes="(max-width: 768px) 22vw, 150px"
-                          />
-                        </div>
-                        <div className="absolute inset-0 pointer-events-none">
-                          <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-gray-50/40 to-transparent" />
-                          <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-gray-100/40 to-transparent" />
-                          <div className="absolute top-0 bottom-0 left-0 w-3 bg-gradient-to-r from-gray-50/30 to-transparent" />
-                          <div className="absolute top-0 bottom-0 right-0 w-3 bg-gradient-to-l from-gray-50/30 to-transparent" />
-                        </div>
-                      </>
-                    ) : (
-                      <div className="w-full h-full bg-gray-200" />
-                    )}
-                  </div>
-                  <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-                    {sub2?.image_url ? (
-                      <>
-                        <div className="absolute inset-0 p-1.5">
-                          <Image
-                            src={sub2.image_url}
-                            alt={sub2?.name ?? ""}
-                            fill
-                            className="object-contain"
-                            sizes="(max-width: 768px) 22vw, 150px"
-                          />
-                        </div>
-                        <div className="absolute inset-0 pointer-events-none">
-                          <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-gray-50/40 to-transparent" />
-                          <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-gray-100/40 to-transparent" />
-                          <div className="absolute top-0 bottom-0 left-0 w-3 bg-gradient-to-r from-gray-50/30 to-transparent" />
-                          <div className="absolute top-0 bottom-0 right-0 w-3 bg-gradient-to-l from-gray-50/30 to-transparent" />
-                        </div>
-                      </>
-                    ) : (
-                      <div className="w-full h-full bg-gray-200" />
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* ガラス反射オーバーレイ */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-white/10 opacity-30 mix-blend-overlay z-10 pointer-events-none"></div>
-            </div>
-          </div>
+          {renderImageGrid(mainItem, sub1, sub2)}
 
           {/* 装飾アクセント */}
           <div className="h-1 w-full bg-sage/10"></div>
@@ -240,101 +250,18 @@ function ShopCard({ shop }: { shop: Shop }) {
           }}
         >
           {/* ショップ名 */}
-          <div className="px-4 py-3 bg-white/50 backdrop-blur-md">
-            <h4 className="font-serif font-bold text-base tracking-tight text-[#2a2a2a] truncate">
+          <div className="px-4 py-3 bg-white/50 backdrop-blur-md flex items-center gap-2">
+            <h4 className="font-serif font-bold text-base tracking-tight text-[#2a2a2a] truncate flex-1">
               {shop.name}
             </h4>
+            {shop.isFollowed && (
+              <span className="shrink-0 text-[8px] font-bold text-sage bg-sage/10 px-1.5 py-0.5 rounded-full">
+                フォロー中
+              </span>
+            )}
           </div>
 
-          {/* トリプティック画像レイアウト（裏面） */}
-          <div className="px-2 pb-2">
-            <div className="relative w-full overflow-hidden rounded-2xl">
-              {/* ガラスフレームエフェクト */}
-              <div className="absolute inset-0 border-[8px] border-white/20 z-20 pointer-events-none rounded-2xl"></div>
-              <div className="absolute inset-0 border border-white/10 z-20 pointer-events-none rounded-2xl"></div>
-
-              {/* 画像グリッド */}
-              <div className="grid grid-cols-3 gap-1 aspect-[3/4]">
-                {/* メイン画像 */}
-                <div className="col-span-2 relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-                  {backMain?.image_url ? (
-                    <>
-                      <div className="absolute inset-0 p-2">
-                        <Image
-                          src={backMain.image_url}
-                          alt={backMain.name}
-                          fill
-                          className="object-contain"
-                          sizes="(max-width: 768px) 45vw, 300px"
-                        />
-                      </div>
-                      <div className="absolute inset-0 pointer-events-none">
-                        <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-gray-50/40 to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-gray-100/40 to-transparent" />
-                        <div className="absolute top-0 bottom-0 left-0 w-6 bg-gradient-to-r from-gray-50/30 to-transparent" />
-                        <div className="absolute top-0 bottom-0 right-0 w-6 bg-gradient-to-l from-gray-50/30 to-transparent" />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="w-full h-full bg-gray-200" />
-                  )}
-                </div>
-
-                {/* サイド画像カラム */}
-                <div className="col-span-1 grid grid-rows-2 gap-1">
-                  <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-                    {backSub1?.image_url ? (
-                      <>
-                        <div className="absolute inset-0 p-1.5">
-                          <Image
-                            src={backSub1.image_url}
-                            alt={backSub1.name}
-                            fill
-                            className="object-contain"
-                            sizes="(max-width: 768px) 22vw, 150px"
-                          />
-                        </div>
-                        <div className="absolute inset-0 pointer-events-none">
-                          <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-gray-50/40 to-transparent" />
-                          <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-gray-100/40 to-transparent" />
-                          <div className="absolute top-0 bottom-0 left-0 w-3 bg-gradient-to-r from-gray-50/30 to-transparent" />
-                          <div className="absolute top-0 bottom-0 right-0 w-3 bg-gradient-to-l from-gray-50/30 to-transparent" />
-                        </div>
-                      </>
-                    ) : (
-                      <div className="w-full h-full bg-gray-200" />
-                    )}
-                  </div>
-                  <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-                    {backSub2?.image_url ? (
-                      <>
-                        <div className="absolute inset-0 p-1.5">
-                          <Image
-                            src={backSub2.image_url}
-                            alt={backSub2?.name ?? ""}
-                            fill
-                            className="object-contain"
-                            sizes="(max-width: 768px) 22vw, 150px"
-                          />
-                        </div>
-                        <div className="absolute inset-0 pointer-events-none">
-                          <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-gray-50/40 to-transparent" />
-                          <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-gray-100/40 to-transparent" />
-                          <div className="absolute top-0 bottom-0 left-0 w-3 bg-gradient-to-r from-gray-50/30 to-transparent" />
-                          <div className="absolute top-0 bottom-0 right-0 w-3 bg-gradient-to-l from-gray-50/30 to-transparent" />
-                        </div>
-                      </>
-                    ) : (
-                      <div className="w-full h-full bg-gray-200" />
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* ガラス反射オーバーレイ */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-white/10 opacity-30 mix-blend-overlay z-10 pointer-events-none"></div>
-            </div>
-          </div>
+          {renderImageGrid(backMain, backSub1, backSub2)}
 
           {/* 装飾アクセント */}
           <div className="h-1 w-full bg-sage/10"></div>
@@ -347,9 +274,11 @@ function ShopCard({ shop }: { shop: Shop }) {
 export default function ShopGrid({
   initialShops,
   categories,
+  recommendedItems = [],
 }: {
   initialShops: Shop[];
   categories: TagCategory[];
+  recommendedItems?: RecommendedItem[];
 }) {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
@@ -389,9 +318,7 @@ export default function ShopGrid({
               >
                 <div
                   className={`w-[4.5rem] h-[4.5rem] rounded-full p-0.5 bg-gradient-to-br ${cat.gradient} relative transition-transform duration-300 group-hover:scale-105 ${
-                    selectedTag === cat.name
-                      ? "ring-4 ring-sage/30"
-                      : ""
+                    selectedTag === cat.name ? "ring-4 ring-sage/30" : ""
                   }`}
                 >
                   <div className="w-full h-full rounded-full border-2 border-white overflow-hidden bg-gray-200 shadow-lg relative">
@@ -434,8 +361,9 @@ export default function ShopGrid({
         </div>
       </section>
 
-      {/* Shop Grid - Masonry Style */}
+      {/* Shop Grid + For You - 統合セクション */}
       <section className="mt-2 px-3 pb-8 bg-[#FBF5ED] pt-6 rounded-t-3xl">
+        {/* Shops ヘッダー */}
         <div className="mb-6 px-1">
           <div className="flex items-center gap-2">
             <div className="p-1.5 bg-sage/20 rounded-lg text-sage">
@@ -471,7 +399,7 @@ export default function ShopGrid({
         ) : (
           <div className="flex gap-2.5">
             {/* 左カラム */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 min-w-0 flex flex-col">
               {filteredShops
                 .filter((_, i) => i % 2 === 0)
                 .map((shop) => (
@@ -480,7 +408,7 @@ export default function ShopGrid({
             </div>
 
             {/* 右カラム - 少し下げて交互配置（Pinterest風） */}
-            <div className="flex-1 flex flex-col pt-16">
+            <div className="flex-1 min-w-0 flex flex-col pt-16">
               {filteredShops
                 .filter((_, i) => i % 2 !== 0)
                 .map((shop) => (
@@ -488,6 +416,11 @@ export default function ShopGrid({
                 ))}
             </div>
           </div>
+        )}
+
+        {/* For You セクション（同じ背景内に統合） */}
+        {recommendedItems.length > 0 && !selectedTag && (
+          <RecommendedItems items={recommendedItems} />
         )}
       </section>
     </>
