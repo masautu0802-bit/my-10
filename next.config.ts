@@ -29,6 +29,8 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
     ],
+    // 開発環境でのプライベートIP解決問題を回避
+    unoptimized: process.env.NODE_ENV === 'development',
   },
 };
 

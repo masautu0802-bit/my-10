@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/app/lib/supabase/server'
 import { requireAuth } from '@/app/lib/auth/session'
+import { invalidateRecommendationCache } from '@/app/lib/recommendation'
 
 export async function toggleUserFollow(userId: string) {
   const user = await requireAuth()
@@ -33,6 +34,9 @@ export async function toggleUserFollow(userId: string) {
       .from('user_follows')
       .insert({ follower_id: user.id, followee_id: userId })
   }
+
+  // レコメンドキャッシュを無効化（行動変化のため）
+  await invalidateRecommendationCache(user.id)
 
   revalidatePath(`/users/${userId}`)
   revalidatePath('/my')

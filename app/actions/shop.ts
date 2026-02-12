@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/app/lib/supabase/server'
 import { requireAuth } from '@/app/lib/auth/session'
+import { invalidateRecommendationCache } from '@/app/lib/recommendation'
 
 export async function toggleShopFollow(shopId: string) {
   const user = await requireAuth()
@@ -38,6 +39,9 @@ export async function toggleShopFollow(shopId: string) {
       .insert({ user_id: user.id, shop_id: shopId })
   }
 
+  // レコメンドキャッシュを無効化（行動変化のため）
+  await invalidateRecommendationCache(user.id)
+
   revalidatePath(`/shops/${shopId}`)
   revalidatePath('/my')
   revalidatePath('/')
@@ -65,6 +69,9 @@ export async function toggleItemFavorite(itemId: string) {
       .from('item_favorites')
       .insert({ user_id: user.id, item_id: itemId })
   }
+
+  // レコメンドキャッシュを無効化（行動変化のため）
+  await invalidateRecommendationCache(user.id)
 
   revalidatePath(`/items/${itemId}`)
   revalidatePath('/my')

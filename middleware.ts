@@ -40,16 +40,47 @@ export async function middleware(request: NextRequest) {
   )
 
   // Refreshing the auth token
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  try {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser()
 
-  // Redirect to login if accessing protected route without authentication
-  if (isProtectedRoute && !user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/auth/login'
-    url.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(url)
+    // If there's an auth error (e.g., invalid refresh token), clear the session
+    if (error) {
+      // Clear invalid session cookies
+      await supabase.auth.signOut()
+
+      // Redirect to login if accessing protected route
+      if (isProtectedRoute) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/auth/login'
+        url.searchParams.set('redirect', pathname)
+        return NextResponse.redirect(url)
+      }
+
+      // For auth routes, just continue (they can handle their own auth state)
+      return supabaseResponse
+    }
+
+    // Redirect to login if accessing protected route without authentication
+    if (isProtectedRoute && !user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/auth/login'
+      url.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(url)
+    }
+  } catch (error) {
+    // Handle any unexpected errors during auth check
+    console.error('Auth check error:', error)
+
+    // If accessing protected route, redirect to login
+    if (isProtectedRoute) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/auth/login'
+      url.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse

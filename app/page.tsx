@@ -1,8 +1,10 @@
 import Link from "next/link";
 import BottomNav from "@/app/components/BottomNav";
 import ShopGrid from "@/app/components/ShopGrid";
+import RecommendedItems from "@/app/components/RecommendedItems";
 import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentUser } from "@/app/lib/auth/session";
+import { generateRecommendations } from "@/app/lib/recommendation";
 
 type ShopItem = { id: string; name: string; image_url: string | null };
 
@@ -165,6 +167,17 @@ async function getShops() {
 export default async function Home() {
   const [shops, categories, user] = await Promise.all([getShops(), getTopTags(), getCurrentUser()]);
 
+  // レコメンドを非同期で取得（エラーでもページは表示される）
+  let recommendations: Awaited<ReturnType<typeof generateRecommendations>> = [];
+  try {
+    recommendations = await generateRecommendations(user?.id || null, {
+      limit: 20,
+      useCache: true,
+    });
+  } catch (error) {
+    console.error('Failed to load recommendations:', error);
+  }
+
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-[#E5E7EB] shadow-2xl">
       <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-bgwarm">
@@ -216,6 +229,13 @@ export default async function Home() {
 
       <main className="flex-1 pb-[var(--bottom-nav-safe)]">
         <ShopGrid initialShops={shops} categories={categories} />
+
+        {/* レコメンドセクション */}
+        {recommendations.length > 0 && (
+          <div className="bg-[#FBF5ED]">
+            <RecommendedItems items={recommendations} />
+          </div>
+        )}
       </main>
 
       <BottomNav />
